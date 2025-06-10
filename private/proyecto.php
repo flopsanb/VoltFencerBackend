@@ -85,6 +85,8 @@ if (!$authorization->token_valido) {
     }
 }
 
+var_dump($proyecto->status); die();
+
 $api_utils->response(
     $proyecto->status,
     $proyecto->message,
