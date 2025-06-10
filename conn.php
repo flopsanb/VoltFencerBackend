@@ -108,13 +108,18 @@ class Authorization extends Conexion {
         return null;
     }
 
-
     private function getBearerToken(): void {
         $headers = $this->getAuthorizationHeader();
+        error_log("[🧠 HEADER DETECTADO] " . var_export($headers, true));
+
         if (!empty($headers) && preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             $this->token = $matches[1];
+            error_log("[✅ TOKEN EXTRAIDO] " . $this->token);
+        } else {
+            error_log("[❌ TOKEN NO DETECTADO] Headers crudos: " . $headers);
         }
     }
+
 
     public function comprobarToken(): void {
         $this->getBearerToken();
