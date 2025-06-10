@@ -14,9 +14,7 @@ $api_utils->setHeaders(ApiUtils::POST);
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     $api_utils->response(false, 'Método no permitido');
-    $response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -29,9 +27,7 @@ if (
 ) {
     http_response_code(400);
     $api_utils->response(false, 'Credenciales inválidas');
-    $response = $api_utils->response($status, $message, $data, $permises);
-    echo json_encode($response, JSON_PRETTY_PRINT);
-
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -46,6 +42,5 @@ $auth->doLogin($username, $password);
 http_response_code($auth->status ? 200 : 401);
 
 // Respuesta
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
+$api_utils->response($auth->status, $auth->message, $auth->data, null);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
