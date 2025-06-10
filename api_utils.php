@@ -22,16 +22,19 @@ class ApiUtils {
 
     public $response;
 
+    public function __construct() {
+        $this->setHeaders(self::ALL_HEADERS);
+        $this->handlePreflight();
+    }
+
     /**
-     * Establece los headers necesarios para la API (CORS + JSON).
-     *
-     * @param string $method Método permitido o ALL_HEADERS
+     * Establece los headers necesarios para la API.
      */
-    public function setHeaders(string $method): void {
+    public function setHeaders($method) {
         header("Access-Control-Allow-Origin: https://voltfencerfrontend.onrender.com");
         header("Access-Control-Allow-Credentials: true");
-        header("Access-Control-Max-Age: 86400");
-        header("Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, Accept, Origin");
+        header("Access-Control-Max-Age: 1000");
+        header("Access-Control-Allow-Headers: X-Requested-With, Content-Type, Origin, Cache-Control, Pragma, Authorization, Accept, Accept-Encoding");
         header("Content-Type: application/json; charset=utf-8");
 
         if ($method === self::ALL_HEADERS) {
@@ -39,37 +42,38 @@ class ApiUtils {
         } else {
             header("Access-Control-Allow-Methods: {$method}, OPTIONS");
         }
-
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    }
+    
+    /**
+     * Maneja automáticamente las peticiones OPTIONS (preflight CORS).
+     */
+    public function handlePreflight() {
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
             exit();
         }
     }
 
     /**
-     * Muestra errores detallados en desarrollo
+     * Activa la visualización de errores (modo desarrollo).
      */
-    public function displayErrors(): void {
-        ini_set('display_errors', '1');
-        ini_set('display_startup_errors', '1');
+    public function displayErrors() {
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
     }
 
     /**
-     * Estructura una respuesta JSON para la API
-     * 
-     * @param bool $status
-     * @param string $message
-     * @param mixed $data
-     * @param mixed $permises
+     * Devuelve un objeto de respuesta formateado.
      */
-    public function response(bool $status, string $message, $data = null, $permises = null) {
+    public function response($status, $message, $data = null, $permises = null) {
         $this->response = [
             'ok'       => $status,
             'message'  => $message,
-            'data'     => $data ?? [],
-            'permises' => $permises ?? []
+            'data'     => $data,
+            'permises' => $permises
         ];
-        return $this->response;
     }
 }
+
+?>

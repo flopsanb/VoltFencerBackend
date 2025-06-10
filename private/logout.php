@@ -66,7 +66,4 @@ try {
     $api_utils->response(false, 'Error al cerrar sesión', $e->getMessage());
 }
 
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
-exit;
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

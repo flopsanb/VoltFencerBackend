@@ -23,68 +23,54 @@ $authorization = new Authorization();
 $authorization->comprobarToken();
 
 $proyecto = new Proyecto();
-$id       = $_GET['id'] ?? null;
-$request  = json_decode(file_get_contents("php://input"), true);
+$id = $_GET['id'] ?? null;
+$request = json_decode(file_get_contents("php://input"), true);
 
 if (!$authorization->token_valido) {
-    $proyecto->status  = false;
-    $proyecto->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente.';
-    http_response_code(401);
-
+    $proyecto->status = false;
+    $proyecto->message = NO_TOKEN_MESSAGE;
 } else {
     try {
-        $method    = $_SERVER['REQUEST_METHOD'];
-        $permises  = $authorization->permises;
-
-        switch ($method) {
+        switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::GET:
-                $proyecto->data = $proyecto->get();
+                $proyecto->get();
                 break;
 
             case ApiUtils::POST:
-                if (!empty($permises['crear_proyectos'])) {
+                if ((int)($authorization->permises['crear_proyectos'] ?? 0) === 1) {
                     $proyecto->create($request);
                 } else {
-                    $proyecto->status  = false;
                     $proyecto->message = 'No tienes permiso para crear proyectos.';
-                    http_response_code(403);
                 }
                 break;
 
             case ApiUtils::PUT:
-                if (!empty($permises['gestionar_usuarios_empresa']) || !empty($permises['gestionar_usuarios_globales'])) {
+                if ((int)($authorization->permises['gestionar_usuarios_empresa'] ?? 0) === 1 ||
+                    (int)($authorization->permises['gestionar_usuarios_globales'] ?? 0) === 1) {
                     $proyecto->update($request);
                 } else {
-                    $proyecto->status  = false;
                     $proyecto->message = 'No tienes permiso para modificar proyectos.';
-                    http_response_code(403);
                 }
                 break;
 
             case ApiUtils::DELETE:
-                if (!empty($permises['borrar_proyectos'])) {
+                if ((int)($authorization->permises['borrar_proyectos'] ?? 0) === 1) {
                     $proyecto->delete($id);
                 } else {
-                    $proyecto->status  = false;
                     $proyecto->message = 'No tienes permiso para eliminar proyectos.';
-                    http_response_code(403);
                 }
                 break;
 
             default:
-                $proyecto->status  = false;
                 $proyecto->message = 'Método no soportado.';
-                http_response_code(405);
         }
-
     } catch (Exception $e) {
-        $proyecto->status  = false;
+        $proyecto->status = false;
         $proyecto->message = 'Error inesperado en el endpoint de proyecto';
-        $proyecto->data    = $e->getMessage();
-        http_response_code(500);
+        $proyecto->data = $e->getMessage();
     }
 }
 
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-exit;
+// Devolver la respuesta con los permisos tal cual llegan
+$api_utils->response($proyecto->status, $proyecto->message, $proyecto->data, $authorization->permises);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

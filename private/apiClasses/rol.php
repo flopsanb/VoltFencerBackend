@@ -15,60 +15,15 @@ require_once __DIR__ . '/../../conn.php';
 
 class Rol extends Conexion implements crud {
 
-    /**
-     * Estado de la operación
-     * 
-     * Indica si la última operación realizada fue exitosa.
-     * 
-     * @var boolean
-     */
     public $status = false;
-    
-    /**
-     * Mensaje descriptivo
-     * 
-     * Contiene un mensaje informativo sobre el resultado de la operación.
-     * 
-     * @var string|null
-     */
     public $message = NULL;
-    
-    /**
-     * Datos de respuesta
-     * 
-     * Almacena los datos relevantes obtenidos tras la operación.
-     * 
-     * @var mixed|null
-     */
     public $data = NULL;
-    
-    /**
-     * Ruta de acceso para permisos
-     * 
-     * Identificador utilizado para la verificación de permisos
-     * relacionados con esta entidad.
-     * 
-     * @var string
-     */
     const ROUTE = 'roles';
 
-    /**
-     * Constructor de la clase
-     * 
-     * Inicializa la conexión a la base de datos llamando al constructor padre.
-     */
     function __construct () {
         parent::__construct();
     }
 
-    /**
-     * Recupera todos los roles
-     * 
-     * Obtiene un listado completo de todos los roles definidos en el sistema,
-     * ordenados alfabéticamente por nombre.
-     * 
-     * @return void
-     */
     public function get() {
         try {
             $sql = $this->conexion->prepare("SELECT * FROM roles ORDER BY nombre_rol");
@@ -83,15 +38,6 @@ class Rol extends Conexion implements crud {
         $this->closeConnection();
     }
 
-    /**
-     * Crea un nuevo rol
-     * 
-     * Registra un nuevo rol en el sistema con el nombre proporcionado.
-     * Incluye validaciones para impedir la creación de un rol 'superadmin'.
-     * 
-     * @param array $data Datos del rol (nombre_rol)
-     * @return void
-     */
     public function create($data) {
         $rol = $data['nombre_rol'] ?? null;
 
@@ -117,18 +63,6 @@ class Rol extends Conexion implements crud {
         $this->closeConnection();
     }
 
-    /**
-     * Actualiza un rol existente
-     * 
-     * Modifica el nombre de un rol basándose en su ID.
-     * Incluye validaciones de seguridad para:
-     * - Proteger el rol Superadmin
-     * - Verificar que el usuario tenga los permisos adecuados (rol 1 o 2)
-     * - Asegurar que se proporcionen datos completos
-     * 
-     * @param array $data Datos del rol a actualizar (id_rol, nombre_rol)
-     * @return void
-     */
     public function update($data) {
         $authorization = $GLOBALS['authorization'];
         $id_rol_actual = $authorization->permises['id_rol'] ?? null;
@@ -172,18 +106,6 @@ class Rol extends Conexion implements crud {
         $this->closeConnection();
     }
 
-    /**
-     * Elimina un rol
-     * 
-     * Elimina permanentemente un rol del sistema basándose en su ID.
-     * Incluye validaciones de seguridad para:
-     * - Proteger el rol Superadmin (id=1)
-     * - Verificar que el usuario tenga los permisos adecuados (rol 1 o 2)
-     * - Asegurar que se proporcione un ID válido
-     * 
-     * @param int $id Identificador del rol a eliminar
-     * @return void
-     */
     public function delete($id) {
         $authorization = $GLOBALS['authorization'];
         $id_rol_actual = $authorization->permises['id_rol'] ?? null;
@@ -221,15 +143,6 @@ class Rol extends Conexion implements crud {
         $this->closeConnection();
     }
 
-    /**
-     * Recupera un rol por su ID
-     * 
-     * Obtiene los detalles completos de un rol específico
-     * utilizando su identificador único.
-     * 
-     * @param int $id_rol Identificador del rol a consultar
-     * @return void
-     */
     private function getRolById($id_rol) {
         try {
             $sql = $this->conexion->prepare("SELECT * FROM roles WHERE id_rol = :id_rol");

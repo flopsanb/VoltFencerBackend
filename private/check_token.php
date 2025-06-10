@@ -43,6 +43,5 @@ try {
 }
 
 // Muestra la respuesta
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
 

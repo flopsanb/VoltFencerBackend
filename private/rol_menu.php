@@ -24,17 +24,16 @@ $authorization = new Authorization();
 $authorization->comprobarToken();
 
 $request = json_decode(file_get_contents("php://input"), true);
-$id = $_GET['id'] ?? null;
 
 $rol_menu = new RolMenu();
+$id = $_GET['id'] ?? null;
 
 if ($authorization->token_valido) {
     try {
-        $method = $_SERVER['REQUEST_METHOD'];
+        switch ($_SERVER['REQUEST_METHOD']) {
 
-        switch ($method) {
             case ApiUtils::GET:
-                $rol_menu->data = $rol_menu->get();
+                $rol_menu->get();
                 $authorization->getPermision(RolMenu::ROUTE);
                 break;
 
@@ -43,9 +42,7 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol_menu->create($request);
                 } else {
-                    $rol_menu->status = false;
-                    $rol_menu->message = defined('ADD_ROL_MENU_NOT_PERMISION') ? ADD_ROL_MENU_NOT_PERMISION : 'No tienes permiso para añadir roles a menús.';
-                    http_response_code(403);
+                    $rol_menu->message = ADD_ROL_MENU_NOT_PERMISION;
                 }
                 break;
 
@@ -54,9 +51,7 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol_menu->update($request);
                 } else {
-                    $rol_menu->status = false;
-                    $rol_menu->message = defined('EDIT_ROL_MENU_NOT_PERMISION') ? EDIT_ROL_MENU_NOT_PERMISION : 'No tienes permiso para editar esta relación.';
-                    http_response_code(403);
+                    $rol_menu->message = EDIT_ROL_MENU_NOT_PERMISION;
                 }
                 break;
 
@@ -65,16 +60,12 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol_menu->delete($id);
                 } else {
-                    $rol_menu->status = false;
-                    $rol_menu->message = defined('DELETE_ROL_MENU_NOT_PERMISION') ? DELETE_ROL_MENU_NOT_PERMISION : 'No tienes permiso para eliminar esta relación.';
-                    http_response_code(403);
+                    $rol_menu->message = DELETE_ROL_MENU_NOT_PERMISION;
                 }
                 break;
 
             default:
-                $rol_menu->status = false;
                 $rol_menu->message = 'Método no soportado';
-                http_response_code(405);
                 break;
         }
 
@@ -82,16 +73,12 @@ if ($authorization->token_valido) {
         $rol_menu->status = false;
         $rol_menu->message = 'Error inesperado en el endpoint de rol_menu';
         $rol_menu->data = $e->getMessage();
-        http_response_code(500);
     }
 
 } else {
     $rol_menu->status = false;
-    $rol_menu->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente.';
-    http_response_code(401);
+    $rol_menu->message = NO_TOKEN_MESSAGE;
 }
 
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
-exit;
+$api_utils->response($rol_menu->status, $rol_menu->message, $rol_menu->data, $authorization->permises);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

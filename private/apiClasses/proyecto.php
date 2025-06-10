@@ -19,7 +19,6 @@ class Proyecto extends Conexion implements crud {
     public $status = false;
     public $message = null;
     public $data = null;
-
     const ROUTE = 'proyectos';
 
     function __construct() {
@@ -28,27 +27,32 @@ class Proyecto extends Conexion implements crud {
 
     public function get() {
         try {
-            $auth = $GLOBALS['authorization']->permises ?? [];
-            $id_rol = $auth['id_rol'] ?? null;
-            $id_empresa = $auth['id_empresa'] ?? null;
+            $authorization = $GLOBALS['authorization'];
+            $datos = $authorization->permises;
+            $id_rol = $datos['id_rol'] ?? null;
+            $id_empresa = $datos['id_empresa'] ?? null;
 
-            $sql = "SELECT p.*, e.nombre_empresa FROM proyectos p 
-                    JOIN empresas e ON p.id_empresa = e.id_empresa";
-
-            if (in_array($id_rol, [3, 4])) {
-                $sql .= " WHERE p.id_empresa = :id_empresa AND p.habilitado = 1";
-                if ($id_rol == 4) $sql .= " AND p.visible = 1";
-            }
-
-            $sql .= " ORDER BY p.id_proyecto ASC";
-            $stmt = $this->conexion->prepare($sql);
+            $sqlBase = "SELECT p.*, e.nombre_empresa FROM proyectos p
+                        JOIN empresas e ON p.id_empresa = e.id_empresa";
 
             if (in_array($id_rol, [3, 4])) {
-                $stmt->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
+                // admin_empresa o empleado_empresa
+                $sqlBase .= " WHERE p.id_empresa = :id_empresa AND p.habilitado = 1";
+                if ($id_rol == 4) {
+                    // empleados solo ven visibles
+                    $sqlBase .= " AND p.visible = 1";
+                }
             }
 
-            $stmt->execute();
-            $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $sqlBase .= " ORDER BY p.id_proyecto ASC";
+            $sql = $this->conexion->prepare($sqlBase);
+
+            if (in_array($id_rol, [3, 4])) {
+                $sql->bindParam(':id_empresa', $id_empresa);
+            }
+
+            $sql->execute();
+            $this->data = $sql->fetchAll(PDO::FETCH_ASSOC);
             $this->status = true;
 
         } catch (PDOException $e) {
@@ -58,60 +62,56 @@ class Proyecto extends Conexion implements crud {
         $this->closeConnection();
     }
 
+
     public function create($data) {
         try {
-            $sql = $this->conexion->prepare("
-                INSERT INTO proyectos 
-                (nombre_proyecto, id_empresa, iframe_proyecto, visible, habilitado) 
-                VALUES 
-                (:nombre_proyecto, :id_empresa, :iframe_proyecto, :visible, :habilitado)");
+            $sql = $this->conexion->prepare("INSERT INTO proyectos (nombre_proyecto, id_empresa, iframe_proyecto, visible, habilitado) VALUES (:nombre_proyecto, :id_empresa, :iframe_proyecto, :visible, :habilitado)");
 
-            $sql->execute([
-                ':nombre_proyecto' => $data['nombre_proyecto'],
-                ':id_empresa' => $data['id_empresa'],
-                ':iframe_proyecto' => $data['iframe_proyecto'],
-                ':visible' => $data['visible'],
-                ':habilitado' => $data['habilitado'],
-            ]);
+            $sql->bindParam(':nombre_proyecto', $data['nombre_proyecto'], PDO::PARAM_STR);
+            $sql->bindParam(':id_empresa', $data['id_empresa'], PDO::PARAM_INT);
+            $sql->bindParam(':iframe_proyecto', $data['iframe_proyecto'], PDO::PARAM_STR);
+            $sql->bindParam(':visible', $data['visible'], PDO::PARAM_INT);
+            $sql->bindParam(':habilitado', $data['habilitado'], PDO::PARAM_INT);
+            $sql->execute();
 
             $this->status = true;
             $this->message = 'Proyecto creado correctamente';
-
         } catch (PDOException $e) {
             $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 
     public function update($data) {
         try {
-            $auth = $GLOBALS['authorization']->permises ?? [];
-            $id_rol = $auth['id_rol'] ?? null;
-            $id_empresa_user = $auth['id_empresa'] ?? null;
+            $authorization = $GLOBALS['authorization'];
+            $permises = $authorization->permises;
+            $id_rol = $permises['id_rol'] ?? null;
+            $id_empresa_user = $permises['id_empresa'] ?? null;
 
+            // Si no es superadmin ni admin, comprobar que el proyecto es suyo
             if (!in_array($id_rol, [1, 2])) {
-                // Validación de empresa propietaria
-                $check = $this->conexion->prepare("SELECT id_empresa FROM proyectos WHERE id_proyecto = :id");
-                $check->execute([':id' => $data['id_proyecto']]);
-                $proyecto = $check->fetch(PDO::FETCH_ASSOC);
+                $sqlCheck = $this->conexion->prepare("SELECT id_empresa FROM proyectos WHERE id_proyecto = :id_proyecto");
+                $sqlCheck->bindParam(':id_proyecto', $data['id_proyecto'], PDO::PARAM_INT);
+                $sqlCheck->execute();
+                $proyecto = $sqlCheck->fetch(PDO::FETCH_ASSOC);
 
                 if (!$proyecto || $proyecto['id_empresa'] != $id_empresa_user) {
+                    $this->status = false;
                     $this->message = 'No puedes editar proyectos que no son de tu empresa.';
                     return;
                 }
 
-                // No puede tocar habilitado
-                $data['habilitado'] = 1;
+                // Además, si es admin_empresa, no puede cambiar el campo `habilitado`
+                $data['habilitado'] = 1; // Fuerzas a que no lo pueda cambiar
             }
 
-            $sql = $this->conexion->prepare("
-                UPDATE proyectos SET 
-                    nombre_proyecto = :nombre_proyecto,
-                    id_empresa = :id_empresa,
-                    iframe_proyecto = :iframe_proyecto,
-                    visible = :visible,
-                    habilitado = :habilitado
+            $sql = $this->conexion->prepare("UPDATE proyectos SET 
+                nombre_proyecto = :nombre_proyecto,
+                id_empresa = :id_empresa,
+                iframe_proyecto = :iframe_proyecto,
+                visible = :visible,
+                habilitado = :habilitado
                 WHERE id_proyecto = :id_proyecto");
 
             $sql->execute([
@@ -133,25 +133,30 @@ class Proyecto extends Conexion implements crud {
         $this->closeConnection();
     }
 
+
     public function delete($id) {
         try {
-            $auth = $GLOBALS['authorization']->permises ?? [];
-            $id_rol = $auth['id_rol'] ?? null;
-            $id_empresa_user = $auth['id_empresa'] ?? null;
+            $authorization = $GLOBALS['authorization'];
+            $permises = $authorization->permises;
+            $id_rol = $permises['id_rol'] ?? null;
+            $id_empresa_user = $permises['id_empresa'] ?? null;
 
             if (!in_array($id_rol, [1, 2])) {
-                $check = $this->conexion->prepare("SELECT id_empresa FROM proyectos WHERE id_proyecto = :id");
-                $check->execute([':id' => $id]);
-                $proyecto = $check->fetch(PDO::FETCH_ASSOC);
+                $sqlCheck = $this->conexion->prepare("SELECT id_empresa FROM proyectos WHERE id_proyecto = :id_proyecto");
+                $sqlCheck->bindParam(':id_proyecto', $id, PDO::PARAM_INT);
+                $sqlCheck->execute();
+                $proyecto = $sqlCheck->fetch(PDO::FETCH_ASSOC);
 
                 if (!$proyecto || $proyecto['id_empresa'] != $id_empresa_user) {
+                    $this->status = false;
                     $this->message = 'No puedes eliminar proyectos que no son de tu empresa.';
                     return;
                 }
             }
 
-            $sql = $this->conexion->prepare("DELETE FROM proyectos WHERE id_proyecto = :id");
-            $sql->execute([':id' => $id]);
+            $sql = $this->conexion->prepare("DELETE FROM proyectos WHERE id_proyecto = :id_proyecto");
+            $sql->bindParam(':id_proyecto', $id, PDO::PARAM_INT);
+            $sql->execute();
 
             $this->status = true;
             $this->message = 'Proyecto eliminado correctamente';
@@ -162,5 +167,7 @@ class Proyecto extends Conexion implements crud {
 
         $this->closeConnection();
     }
+
 }
+
 ?>

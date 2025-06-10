@@ -23,8 +23,10 @@ error_log("[📩] Petición recibida en soporte.php");
 
 $authorization = new Authorization();
 $authorization->comprobarToken();
+
 $GLOBALS['authorization'] = $authorization;
 
+// Capturamos el input crudo y decodificado
 $inputRaw = file_get_contents("php://input");
 error_log("[📦] JSON crudo recibido: " . $inputRaw);
 
@@ -36,30 +38,27 @@ $soporte = new Soporte();
 if ($authorization->token_valido) {
     error_log("[🔐] Token válido. Procesando...");
     try {
-        if ($_SERVER['REQUEST_METHOD'] === ApiUtils::POST) {
-            error_log("[➡️] Método POST recibido");
-            $soporte->crearTicket($request);
-        } else {
-            $soporte->status = false;
-            $soporte->message = 'Método no soportado';
-            error_log("[🚫] Método no soportado: " . $_SERVER['REQUEST_METHOD']);
-            http_response_code(405);
+        switch ($_SERVER['REQUEST_METHOD']) {
+            case ApiUtils::POST:
+                error_log("[➡️] Método POST recibido");
+                $soporte->crearTicket($request);
+                break;
+            default:
+                $soporte->status = false;
+                $soporte->message = 'Método no soportado';
+                error_log("[🚫] Método no soportado: " . $_SERVER['REQUEST_METHOD']);
         }
     } catch (Exception $e) {
         $soporte->status = false;
         $soporte->message = 'Error inesperado en el endpoint de soporte';
         $soporte->data = $e->getMessage();
         error_log("[💥] Excepción atrapada: " . $e->getMessage());
-        http_response_code(500);
     }
 } else {
     $soporte->status = false;
-    $soporte->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente';
+    $soporte->message = NO_TOKEN_MESSAGE;
     error_log("[⛔] Token inválido. Acceso denegado.");
-    http_response_code(401);
 }
 
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
-exit;
+$api_utils->response($soporte->status, $soporte->message, $soporte->data);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

@@ -15,29 +15,22 @@ require_once __DIR__ . '/../api_utils.php';
 // Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors(); // ❌ Desactiva en producción
+$api_utils->displayErrors();
 
 $request = json_decode(file_get_contents("php://input"), true);
-$token = $request['token'] ?? null;
-
 $auth = new Auth();
 
 try {
-    if (!$token || !is_string($token) || trim($token) === '') {
-        http_response_code(400);
-        throw new Exception('Token no proporcionado o inválido');
+    if (!isset($request['token']) || empty($request['token'])) {
+        throw new Exception('Token no proporcionado');
     }
 
-    $auth->checkTokenPassword($token);
-    http_response_code($auth->status ? 200 : 401);
+    $auth->checkTokenPassword($request['token']);
 
 } catch (Exception $e) {
-    if (http_response_code() === 200) http_response_code(500);
     $auth->status = false;
     $auth->message = $e->getMessage();
 }
 
-// Respuesta
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
+$api_utils->response($auth->status, $auth->message, $auth->data ?? null);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

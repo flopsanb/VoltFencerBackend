@@ -13,53 +13,42 @@ require_once __DIR__ . '/../api_utils.php';
 // Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
-$api_utils->displayErrors(); // ⚠️ Comentar en producción
+$api_utils->displayErrors();
 
-// Validación de token
 $authorization = new Authorization();
 $authorization->comprobarToken();
+
+$request = json_decode(file_get_contents("php://input"), true);
+
+$conexion = new EstadoConexion();
 $id_usuario = $authorization->id_usuario ?? null;
 
-// Instancia de lógica
-$conexion = new EstadoConexion();
-
-// Procesamiento
 if ($authorization->token_valido && $id_usuario) {
     try {
-        $method = $_SERVER['REQUEST_METHOD'];
+        error_log("MÉTODO RECIBIDO: " . $_SERVER['REQUEST_METHOD']);
 
-        switch ($method) {
+        switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::POST:
                 $conexion->registrarActividad($id_usuario);
-                http_response_code(200);
                 break;
 
             case ApiUtils::GET:
                 $conexion->getConectados();
-                http_response_code(200);
                 break;
 
             default:
-                $conexion->status = false;
                 $conexion->message = 'Método no soportado.';
-                http_response_code(405);
                 break;
         }
-
     } catch (Exception $e) {
         $conexion->status = false;
         $conexion->message = 'Error inesperado en el endpoint de conexión';
         $conexion->data = $e->getMessage();
-        http_response_code(500);
     }
-
 } else {
     $conexion->status = false;
     $conexion->message = NO_TOKEN_MESSAGE;
-    http_response_code(401);
 }
 
-// Respuesta
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
+$api_utils->response($conexion->status, $conexion->message, $conexion->data);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

@@ -15,117 +15,104 @@ $api_utils->displayErrors();
 
 $authorization = new Authorization();
 $authorization->comprobarToken();
+error_log("TOKEN VALIDEZ: " . ($authorization->token_valido ? "VÁLIDO" : "NO VÁLIDO"));
+error_log("TOKEN ENVIADO: " . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NO HAY'));
 $GLOBALS['authorization'] = $authorization;
 
-$request = json_decode(file_get_contents('php://input'), true);
+$request = json_decode(file_get_contents("php://input"), true);
+error_log("📥 Datos recibidos en POST: " . print_r($request, true));
 
 $usuario = new Usuario();
-$id      = $_GET['id']    ?? null;
-$route   = $_GET['route'] ?? null;
 
-$status  = true;
-$message = '';
-$data    = null;
+$id = $_GET['id'] ?? null;
+$route = $_GET['route'] ?? null;
 
 if ($authorization->token_valido) {
     try {
-        $permises         = $authorization->permises;
-        $user_info        = $authorization->usuario;
-        $es_superadmin    = ($user_info['rol'] === 'superadmin');
-        $es_admin_empresa = ($user_info['rol'] === 'admin_empresa');
-        $id_empresa_token = $user_info['id_empresa'];
-        $method           = $_SERVER['REQUEST_METHOD'];
+        $permisos = $authorization->permises;
+        $es_superadmin = $authorization->usuario['rol'] === 'superadmin';
+        $es_admin = $authorization->usuario['rol'] === 'admin';
+        $es_admin_empresa = $authorization->usuario['rol'] === 'admin_empresa';
+        $id_empresa_token = $authorization->usuario['id_empresa'];
 
-        switch ($method) {
+        switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::GET:
-                if (($permises['gestionar_usuarios_globales'] ?? 0) || ($permises['ver_usuarios_empresa'] ?? 0)) {
-                    $data = $usuario->get();
+                if (
+                    ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
+                    ($permisos['ver_usuarios_empresa'] ?? 0) === 1
+                ) {
+                    $usuario->get();
                 } else {
-                    $status  = false;
-                    $message = 'No tienes permisos para ver los usuarios';
+                    $usuario->status = false;
+                    $usuario->message = 'No tienes permisos para ver los usuarios';
                 }
                 break;
 
             case ApiUtils::POST:
-                if (($permises['gestionar_usuarios_globales'] ?? 0) || ($permises['gestionar_usuarios_empresa'] ?? 0)) {
-                    if ($es_admin_empresa) {
-                        if ($request['id_empresa'] != $id_empresa_token) {
-                            $status  = false;
-                            $message = 'No puedes crear usuarios fuera de tu empresa';
-                            break;
-                        }
-                        if (!in_array($request['id_rol'], [3, 4])) {
-                            $status  = false;
-                            $message = 'No puedes asignar ese rol';
-                            break;
-                        }
+                if (
+                    ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
+                    ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
+                ) {
+                    if ($es_admin_empresa && $request['id_empresa'] != $id_empresa_token) {
+                        $usuario->status = false;
+                        $usuario->message = 'No puedes crear usuarios fuera de tu empresa';
+                    } elseif ($es_admin_empresa && !in_array($request['id_rol'], [3, 4])) {
+                        $usuario->status = false;
+                        $usuario->message = 'No puedes asignar ese rol';
+                    } else {
+                        $usuario->create($request);
                     }
-                    $data = $usuario->create($request);
                 } else {
-                    $status  = false;
-                    $message = 'No tienes permiso para crear usuarios';
+                    $usuario->message = ADD_USER_NOT_PERMISION;
                 }
                 break;
 
             case ApiUtils::PUT:
                 if ($route === Usuario::ROUTE_PROFILE) {
-                    $data = $usuario->updateProfile($request, $authorization->token);
-                    break;
-                }
-
-                if (($permises['gestionar_usuarios_globales'] ?? 0) || ($permises['gestionar_usuarios_empresa'] ?? 0)) {
-                    if ($es_admin_empresa) {
-                        if ($request['id_empresa'] != $id_empresa_token) {
-                            $status  = false;
-                            $message = 'No puedes editar usuarios fuera de tu empresa';
-                            break;
-                        }
-                        if (!in_array($request['id_rol'], [3, 4])) {
-                            $status  = false;
-                            $message = 'No puedes cambiar a un rol superior al tuyo';
-                            break;
-                        }
+                    $usuario->updateProfile($request, $authorization->token);
+                } elseif (
+                    ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
+                    ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
+                ) {
+                    if ($es_admin_empresa && $request['id_empresa'] != $id_empresa_token) {
+                        $usuario->status = false;
+                        $usuario->message = 'No puedes editar usuarios fuera de tu empresa';
+                    } elseif ($es_admin_empresa && !in_array($request['id_rol'], [3, 4])) {
+                        $usuario->status = false;
+                        $usuario->message = 'No puedes cambiar a un rol superior al tuyo';
+                    } else {
+                        $usuario->update($request);
                     }
-                    $data = $usuario->update($request);
                 } else {
-                    $status  = false;
-                    $message = 'No tienes permiso para editar usuarios';
+                    $usuario->message = EDIT_USER_NOT_PERMISION;
                 }
                 break;
 
             case ApiUtils::DELETE:
-                if (($permises['gestionar_usuarios_globales'] ?? 0) || ($permises['gestionar_usuarios_empresa'] ?? 0)) {
-                    $data = $usuario->delete($id);
+                if (
+                    ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
+                    ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
+                ) {
+                    $usuario->delete($id);
                 } else {
-                    $status  = false;
-                    $message = 'No tienes permiso para eliminar usuarios';
+                    $usuario->message = DELETE_USER_NOT_PERMISION;
                 }
                 break;
 
             default:
-                $status  = false;
-                $message = 'Método no soportado';
+                $usuario->message = 'Método no soportado';
         }
 
     } catch (Exception $e) {
-        $status  = false;
-        $message = 'Error inesperado en endpoint usuario';
-        $data    = $e->getMessage();
+        $usuario->status = false;
+        $usuario->message = 'Error inesperado en el endpoint de usuario';
+        $usuario->data = $e->getMessage();
     }
 
 } else {
-    $status  = false;
-    $message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token no válido o ausente';
-    http_response_code(401);
+    $usuario->status = false;
+    $usuario->message = NO_TOKEN_MESSAGE;
 }
 
-// Código de respuesta HTTP adecuado
-if (!$status && http_response_code() === 200) {
-    http_response_code(403);
-}
-
-// Respuesta final
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
-exit;
+$api_utils->response($usuario->status, $usuario->message, $usuario->data, $authorization->permises);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

@@ -14,27 +14,23 @@ require_once __DIR__ . '/auth.php';
 class Usuario extends Conexion implements crud {
 
     public $status = false;
-    public $message = null;
-    public $data = [];
+    public $message = NULL;
+    public $data = NULL;
 
     const ROUTE = 'usuarios';
     const ROUTE_PROFILE = 'profile';
 
-    function __construct() {
+    function __construct (){
         parent::__construct();
-    }
-
-    private function validarRolEmpresa($id_empresa, $id_rol) {
-        $auth = $GLOBALS['authorization']->permises;
-        return $auth['id_rol'] === 3 && ($id_empresa != $auth['id_empresa'] || !in_array($id_rol, [3, 4]));
     }
 
     public function get() {
         try {
             $authorization = $GLOBALS['authorization'];
-            $permises = $authorization->permises;
-            $id_rol = $permises['id_rol'] ?? null;
-            $id_empresa_token = $permises['id_empresa'] ?? null;
+            $datos = $authorization->permises;
+            $id_rol = $datos['id_rol'] ?? null;
+            $id_empresa_token = $datos['id_empresa'] ?? null;
+
             $id_empresa_get = $_GET['id_empresa'] ?? null;
             $usar_empresa = $id_empresa_token;
 
@@ -42,9 +38,7 @@ class Usuario extends Conexion implements crud {
                 $usar_empresa = $id_empresa_get;
             }
 
-            $sqlBase = "SELECT u.id_usuario, u.usuario, u.email, u.id_rol, u.observaciones,
-                        r.nombre_rol AS rol, u.id_empresa, e.nombre_empresa, 
-                        u.nombre_publico, u.habilitado
+            $sqlBase = "SELECT u.id_usuario, u.usuario, u.email, u.id_rol, u.observaciones, r.nombre_rol AS rol, u.id_empresa, e.nombre_empresa, u.observaciones, u.nombre_publico, u.habilitado
                         FROM usuarios u
                         INNER JOIN roles r ON u.id_rol = r.id_rol
                         LEFT JOIN empresas e ON u.id_empresa = e.id_empresa";
@@ -54,25 +48,29 @@ class Usuario extends Conexion implements crud {
             }
 
             $sqlBase .= " ORDER BY u.id_usuario ASC";
-            $stmt = $this->conexion->prepare($sqlBase);
+            $sql = $this->conexion->prepare($sqlBase);
 
             if (!in_array($id_rol, [1, 2]) || $id_empresa_get !== null) {
-                $stmt->bindParam(':id_empresa', $usar_empresa);
+                $sql->bindParam(":id_empresa", $usar_empresa);
             }
 
-            if ($stmt->execute()) {
+            if ($sql->execute()){
                 $this->status = true;
-                $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $this->data = $sql->fetchAll(PDO::FETCH_ASSOC);
             }
-        } catch (PDOException $e) {
-            $this->status = false;
-            $this->message = $e->getMessage();
+
+        } catch(PDOException $error){
+            $this->message = $error->getMessage();
         }
         $this->closeConnection();
     }
 
+
     public function create($data) {
-        $auth = $GLOBALS['authorization']->permises;
+        $authorization = $GLOBALS['authorization'];
+        $datos = $authorization->permises;
+        $id_rol_token = $datos['id_rol'] ?? null;
+        $id_empresa_token = $datos['id_empresa'] ?? null;
 
         $usuario = $data['usuario'] ?? null;
         $password = isset($data['password']) ? md5($data['password']) : null;
@@ -82,50 +80,53 @@ class Usuario extends Conexion implements crud {
         $id_empresa = $data['id_empresa'] ?? null;
         $observaciones = $data['observaciones'] ?? '';
 
-        if ($this->validarRolEmpresa($id_empresa, $id_rol)) {
-            $this->status = false;
-            $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
-            return;
+        if ($id_rol_token == 3) {
+            if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
+                $this->status = false;
+                $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
+                return;
+            }
         }
 
         try {
-            if ($usuario && $password && $email && $id_rol && $id_empresa) {
-                $stmt = $this->conexion->prepare("INSERT INTO usuarios 
+            if (!empty($usuario) && !empty($password) && !empty($email) && isset($id_rol) && isset($id_empresa)) {
+                $sql = $this->conexion->prepare("INSERT INTO usuarios 
                     (usuario, pass_user, email, id_rol, id_empresa, nombre_publico, habilitado, observaciones) 
                     VALUES (:usuario, :password, :email, :id_rol, :id_empresa, :nombre_publico, 1, :observaciones)");
 
-                $stmt->bindParam(":usuario", $usuario);
-                $stmt->bindParam(":password", $password);
-                $stmt->bindParam(":email", $email);
-                $stmt->bindParam(":id_rol", $id_rol);
-                $stmt->bindParam(":id_empresa", $id_empresa);
-                $stmt->bindParam(":nombre_publico", $nombre_publico);
-                $stmt->bindParam(":observaciones", $observaciones);
+                $sql->bindParam(":usuario", $usuario);
+                $sql->bindParam(":password", $password);
+                $sql->bindParam(":email", $email);
+                $sql->bindParam(":id_rol", $id_rol);
+                $sql->bindParam(":id_empresa", $id_empresa);
+                $sql->bindParam(":nombre_publico", $nombre_publico);
+                $sql->bindParam(":observaciones", $observaciones);
 
-                if ($stmt->execute()) {
+                if ($sql->execute()) {
                     $this->status = true;
-                    $this->message = 'Usuario creado correctamente';
+                    $this->message = ADD_USER_OK;
                     $this->getUserById($this->conexion->lastInsertId());
                 } else {
                     $this->status = false;
-                    $this->message = 'Error al crear el usuario';
+                    $this->message = ADD_USER_KO;
                 }
             } else {
                 $this->status = false;
                 $this->message = 'Faltan campos obligatorios';
             }
-        } catch (PDOException $e) {
+        } catch (PDOException $error) {
             $this->status = false;
-            $this->message = 'PDO: ' . $e->getMessage();
+            $this->message = 'PDOException: ' . $error->getMessage();
         }
 
         $this->closeConnection();
     }
 
     public function update($data) {
-        $auth = $GLOBALS['authorization']->permises;
-        $id_rol_token = $auth['id_rol'];
-        $id_empresa_token = $auth['id_empresa'];
+        $authorization = $GLOBALS['authorization'];
+        $datos = $authorization->permises;
+        $id_rol_token = $datos['id_rol'] ?? null;
+        $id_empresa_token = $datos['id_empresa'] ?? null;
 
         $id_usuario = $data['id_usuario'];
         $usuario = $data['usuario'];
@@ -133,59 +134,56 @@ class Usuario extends Conexion implements crud {
         $observaciones = $data['observaciones'];
         $nombre_publico = $data['nombre_publico'];
         $id_rol = $data['id_rol'];
-        $id_empresa = $data['id_empresa'];
+        $id_empresa = $data['id_empresa'] ?? null;
         $habilitado = $data['habilitado'] ? 1 : 0;
 
-        if ($this->validarRolEmpresa($id_empresa, $id_rol)) {
-            $this->status = false;
-            $this->message = 'No puedes editar usuarios fuera de tu empresa o con rol superior';
-            return;
-        }
-
-        $passwordQuery = '';
-        $password = null;
-        if (!empty($data['password'])) {
-            $passwordQuery = ', pass_user = :password';
-            $password = md5($data['password']);
-        }
-
-        try {
-            $stmt = $this->conexion->prepare("UPDATE usuarios SET
-                id_rol = :id_rol,
-                id_empresa = :id_empresa,
-                usuario = :usuario,
-                email = :email,
-                nombre_publico = :nombre_publico,
-                habilitado = :habilitado,
-                observaciones = :observaciones
-                $passwordQuery
-                WHERE id_usuario = :id_usuario");
-
-            $stmt->bindParam(":id_rol", $id_rol);
-            $stmt->bindParam(":id_empresa", $id_empresa);
-            $stmt->bindParam(":usuario", $usuario);
-            $stmt->bindParam(":email", $email);
-            $stmt->bindParam(":nombre_publico", $nombre_publico);
-            $stmt->bindParam(":habilitado", $habilitado);
-            $stmt->bindParam(":observaciones", $observaciones);
-            $stmt->bindParam(":id_usuario", $id_usuario);
-            if ($password) {
-                $stmt->bindParam(":password", $password);
-            }
-
-            if ($stmt->execute()) {
-                $this->status = true;
-                $this->message = 'Usuario actualizado correctamente';
-                $this->getUserById($id_usuario);
-            } else {
+        if ($id_rol_token == 3) {
+            if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
                 $this->status = false;
-                $this->message = 'Error al actualizar';
+                $this->message = 'No puedes editar usuarios fuera de tu empresa o con rol superior';
+                return;
             }
-        } catch (PDOException $e) {
-            $this->status = false;
-            $this->message = $e->getMessage();
         }
 
+        $contraSQL = "";
+        if (!empty($data['password'])){
+            $password = md5($data['password']);
+            $contraSQL = ", pass_user = :password ";
+        }
+
+        try{
+            $sql = $this->conexion->prepare("UPDATE usuarios SET
+                                        id_rol = :id_rol,
+                                        id_empresa = :id_empresa,
+                                        usuario = :usuario,
+                                        email = :email,
+                                        nombre_publico = :nombre_publico,
+                                        habilitado = :habilitado,
+                                        observaciones = :observaciones
+                                        $contraSQL
+                                        WHERE id_usuario = :id_usuario");
+
+            $sql->bindParam(":id_rol", $id_rol);
+            $sql->bindParam(":id_empresa", $id_empresa);
+            $sql->bindParam(":usuario", $usuario);
+            $sql->bindParam(":email", $email);
+            $sql->bindParam(":nombre_publico", $nombre_publico);
+            $sql->bindParam(":habilitado", $habilitado);
+            $sql->bindParam(":observaciones", $observaciones);
+            $sql->bindParam(":id_usuario", $id_usuario);
+
+            if (!empty($data['password'])){
+                $sql->bindParam(":password", $password);
+            }
+
+            if ($sql->execute()){
+                $this->status = true;
+                $this->message = EDIT_USER_OK;
+                $this->getUserById($id_usuario);
+            } else $this->message = EDIT_USER_KO;
+        } catch(PDOException $error) {
+            $this->message = $error->getMessage();
+        }
         $this->closeConnection();
     }
 
@@ -193,49 +191,46 @@ class Usuario extends Conexion implements crud {
         $usuario = $data['correoUsuario'];
         $nombre_publico = $data['nombrePublico'];
 
-        $passwordQuery = '';
-        $password = null;
-        if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']) {
+        $contraSQL = "";
+        if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']){
             $password = md5($data['nuevaPassword']);
-            $passwordQuery = ', pass_user = :password';
+            $contraSQL = ", pass_user = :password ";
         }
 
-        try {
-            $stmt = $this->conexion->prepare("UPDATE usuarios SET
-                usuario = :usuario,
-                nombre_publico = :nombre_publico
-                $passwordQuery
-                WHERE token_sesion = :token");
+        try{
+            $sql = $this->conexion->prepare("UPDATE usuarios SET
+                                        usuario = :usuario,
+                                        nombre_publico = :nombre_publico
+                                        $contraSQL
+                                        WHERE token_sesion = :token");
 
-            $stmt->bindParam(":usuario", $usuario);
-            $stmt->bindParam(":nombre_publico", $nombre_publico);
-            $stmt->bindParam(":token", $token);
-            if ($password) {
-                $stmt->bindParam(":password", $password);
+            $sql->bindParam(":usuario", $usuario);
+            $sql->bindParam(":nombre_publico", $nombre_publico);
+            $sql->bindParam(":token", $token);
+
+            if (!empty($password)){
+                $sql->bindParam(":password", $password);
             }
 
-            if ($stmt->execute()) {
+            if ($sql->execute()){
                 $this->status = true;
-                $this->message = 'Perfil actualizado correctamente';
-            } else {
-                $this->status = false;
-                $this->message = 'No se pudo actualizar el perfil';
-            }
-        } catch (PDOException $e) {
-            $this->status = false;
-            $this->message = $e->getMessage();
-        }
+                $this->message = EDIT_PERFIL_OK;
+            } else $this->message = EDIT_PERFIL_KO;
 
+        } catch(PDOException $error) {
+            $this->message = $error->getMessage();
+        }
         $this->closeConnection();
     }
 
     public function delete($id) {
-        $auth = $GLOBALS['authorization']->permises;
-        $id_rol_token = $auth['id_rol'];
-        $id_empresa_token = $auth['id_empresa'];
+        $authorization = $GLOBALS['authorization'];
+        $datos = $authorization->permises;
+        $id_rol_token = $datos['id_rol'] ?? null;
+        $id_empresa_token = $datos['id_empresa'] ?? null;
 
         try {
-            if ($id_rol_token === 3) {
+            if ($id_rol_token == 3) {
                 $stmt = $this->conexion->prepare("SELECT id_empresa FROM usuarios WHERE id_usuario = :id");
                 $stmt->bindParam(":id", $id);
                 $stmt->execute();
@@ -248,40 +243,36 @@ class Usuario extends Conexion implements crud {
                 }
             }
 
-            $stmt = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
-            $stmt->bindParam(":id", $id);
-
-            if ($stmt->execute()) {
+            $sql = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
+            $sql->bindParam(":id", $id);
+            if ($sql->execute()){
                 $this->status = true;
-                $this->message = 'Usuario eliminado correctamente';
+                $this->message = DELETE_USER_OK;
                 $this->data = $id;
-            } else {
-                $this->status = false;
-                $this->message = 'Error al eliminar el usuario';
-            }
-        } catch (PDOException $e) {
-            $this->status = false;
-            $this->message = $e->getMessage();
+            } else $this->message = DELETE_USER_KO;
+        } catch(PDOException $error) {
+            $this->message = $error->getMessage();
         }
-
         $this->closeConnection();
     }
 
     private function getUserById($id_usuario) {
         try {
-            $stmt = $this->conexion->prepare("SELECT u.id_usuario, u.usuario, u.email, u.id_rol, r.nombre_rol AS rol, 
-                                              u.id_empresa, e.nombre_empresa, u.observaciones, 
-                                              u.nombre_publico, u.habilitado
-                                              FROM usuarios u
-                                              INNER JOIN roles r ON u.id_rol = r.id_rol
-                                              LEFT JOIN empresas e ON u.id_empresa = e.id_empresa
-                                              WHERE u.id_usuario = :id_usuario");
-            $stmt->bindParam(":id_usuario", $id_usuario);
-            $stmt->execute();
-            $this->data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        } catch (PDOException $e) {
-            $this->status = false;
-            $this->message = $e->getMessage();
+            $sql = $this->conexion->prepare("SELECT u.id_usuario, u.usuario, u.email, u.id_rol, r.nombre_rol AS rol, 
+                                                    u.id_empresa, e.nombre_empresa, u.observaciones, 
+                                                    u.nombre_publico, u.habilitado
+                                             FROM usuarios u 
+                                             INNER JOIN roles r ON u.id_rol = r.id_rol
+                                             LEFT JOIN empresas e ON u.id_empresa = e.id_empresa
+                                             WHERE u.id_usuario = :id_usuario");
+            $sql->bindParam(":id_usuario", $id_usuario);
+            if ($sql->execute()){
+                $this->data = $sql->fetch(PDO::FETCH_ASSOC);
+            }
+        } catch(PDOException $error) {
+            $this->message = $error->getMessage();
         }
     }
 }
+
+?>

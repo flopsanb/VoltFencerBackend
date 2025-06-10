@@ -17,144 +17,103 @@ class Empresa extends Conexion implements crud {
     public $status = false;
     public $message = null;
     public $data = null;
-
     const ROUTE = 'empresas';
 
-    public function __construct() {
+    function __construct () {
         parent::__construct();
     }
 
     public function get() {
         try {
-            $authorization = $GLOBALS['authorization'] ?? null;
-            $id_rol = $authorization->permises['id_rol'] ?? null;
-            $id_empresa = $authorization->permises['id_empresa'] ?? null;
+            $authorization = $GLOBALS['authorization'];
+            $datos = $authorization->permises;
+            $id_rol = $datos['id_rol'] ?? null;
+            $id_empresa = $datos['id_empresa'] ?? null;
 
-            $query = "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas";
-            if (in_array($id_rol, [3, 4])) {
-                $query .= " WHERE id_empresa = :id_empresa";
-            }
-            $query .= " ORDER BY id_empresa ASC";
+            $sqlBase = "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas";
 
-            $stmt = $this->conexion->prepare($query);
-
-            if (in_array($id_rol, [3, 4])) {
-                $stmt->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
+            if ($id_rol == 3 || $id_rol == 4) {
+                $sqlBase .= " WHERE id_empresa = :id_empresa";
             }
 
-            $stmt->execute();
-            $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $sqlBase .= " ORDER BY id_empresa ASC";
+            $sql = $this->conexion->prepare($sqlBase);
+
+            if ($id_rol == 3 || $id_rol == 4) {
+                $sql->bindParam(":id_empresa", $id_empresa);
+            }
+
+            $sql->execute();
+            $this->data = $sql->fetchAll(PDO::FETCH_ASSOC);
             $this->status = true;
-
         } catch (PDOException $e) {
-            $this->message = 'Error al obtener empresas: ' . $e->getMessage();
+            $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 
     public function create($data) {
         try {
-            if (empty($data['nombre_empresa']) || empty($data['logo_url'])) {
-                $this->message = 'Datos incompletos para crear empresa.';
-                return;
-            }
-
-            $stmt = $this->conexion->prepare(
-                "INSERT INTO empresas (nombre_empresa, logo_url) 
-                 VALUES (:nombre_empresa, :logo_url)"
-            );
-            $stmt->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
-            $stmt->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
-            $stmt->execute();
+            $sql = $this->conexion->prepare("INSERT INTO empresas (nombre_empresa, logo_url) VALUES (:nombre_empresa, :logo_url)");
+            $sql->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
+            $sql->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
+            $sql->execute();
 
             $this->status = true;
             $this->message = 'Empresa creada correctamente';
-
         } catch (PDOException $e) {
-            $this->message = 'Error al crear empresa: ' . $e->getMessage();
+            $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 
     public function update($data) {
         try {
-            if (empty($data['id_empresa']) || empty($data['nombre_empresa']) || empty($data['logo_url'])) {
-                $this->message = 'Datos incompletos para actualizar empresa.';
-                return;
-            }
-
-            $stmt = $this->conexion->prepare(
-                "UPDATE empresas 
-                 SET nombre_empresa = :nombre_empresa, logo_url = :logo_url 
-                 WHERE id_empresa = :id_empresa"
-            );
-            $stmt->bindParam(':id_empresa', $data['id_empresa'], PDO::PARAM_INT);
-            $stmt->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
-            $stmt->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
-            $stmt->execute();
+            $sql = $this->conexion->prepare("UPDATE empresas SET nombre_empresa = :nombre_empresa, logo_url = :logo_url WHERE id_empresa = :id_empresa");
+            $sql->bindParam(':id_empresa', $data['id_empresa'], PDO::PARAM_INT);
+            $sql->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
+            $sql->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
+            $sql->execute();
 
             $this->status = true;
             $this->message = 'Empresa actualizada correctamente';
-
         } catch (PDOException $e) {
-            $this->message = 'Error al actualizar empresa: ' . $e->getMessage();
+            $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 
     public function delete($id) {
         try {
-            if (!is_numeric($id)) {
-                $this->message = 'ID inválido';
-                return;
-            }
-
-            $stmt = $this->conexion->prepare(
-                "DELETE FROM empresas 
-                 WHERE id_empresa = :id_empresa"
-            );
-            $stmt->bindParam(':id_empresa', $id, PDO::PARAM_INT);
-            $stmt->execute();
-
+            $sql = $this->conexion->prepare("DELETE FROM empresas WHERE id_empresa = :id_empresa");
+            $sql->bindParam(':id_empresa', $id, PDO::PARAM_INT);
+            $sql->execute();
             $this->status = true;
             $this->message = 'Empresa eliminada correctamente';
-
         } catch (PDOException $e) {
-            $this->message = 'Error al eliminar empresa: ' . $e->getMessage();
+            $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 
     public function getById($id_empresa) {
         try {
-            if (!is_numeric($id_empresa)) {
-                $this->message = 'ID inválido';
-                return;
-            }
+            $sql = $this->conexion->prepare("SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas WHERE id_empresa = :id_empresa");
+            $sql->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
+            $sql->execute();
 
-            $stmt = $this->conexion->prepare(
-                "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url 
-                 FROM empresas 
-                 WHERE id_empresa = :id_empresa"
-            );
-            $stmt->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $this->data = $stmt->fetch(PDO::FETCH_ASSOC);
-            $this->status = (bool) $this->data;
+            $this->data = $sql->fetch(PDO::FETCH_ASSOC);
+            $this->status = true;
 
             if (!$this->data) {
+                $this->status = false;
                 $this->message = 'Empresa no encontrada';
             }
 
         } catch (PDOException $e) {
-            $this->message = 'Error al obtener empresa: ' . $e->getMessage();
+            $this->message = $e->getMessage();
         }
-
         $this->closeConnection();
     }
 }
+?>

@@ -22,18 +22,17 @@ $api_utils->displayErrors();
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
+$request = json_decode(file_get_contents("php://input"), true);
+
 $permiso = new PermisosRol();
 $id = $_GET['id'] ?? null;
-$request = json_decode(file_get_contents("php://input"), true);
 
 if ($authorization->token_valido) {
     try {
-        $method = $_SERVER['REQUEST_METHOD'];
-
-        switch ($method) {
+        switch ($_SERVER['REQUEST_METHOD']) {
 
             case ApiUtils::GET:
-                $permiso->data = $permiso->get();
+                $permiso->get();
                 $authorization->getPermision(PermisosRol::ROUTE);
                 break;
 
@@ -42,9 +41,7 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $permiso->create($request);
                 } else {
-                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para crear permisos';
-                    http_response_code(403);
                 }
                 break;
 
@@ -53,9 +50,7 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $permiso->update($request);
                 } else {
-                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para actualizar permisos';
-                    http_response_code(403);
                 }
                 break;
 
@@ -64,16 +59,12 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $permiso->delete($id);
                 } else {
-                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para eliminar permisos';
-                    http_response_code(403);
                 }
                 break;
 
             default:
-                $permiso->status = false;
                 $permiso->message = 'Método no soportado';
-                http_response_code(405);
                 break;
         }
 
@@ -81,16 +72,12 @@ if ($authorization->token_valido) {
         $permiso->status = false;
         $permiso->message = 'Error inesperado en el endpoint de permisos_rol';
         $permiso->data = $e->getMessage();
-        http_response_code(500);
     }
 
 } else {
     $permiso->status = false;
-    $permiso->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente.';
-    http_response_code(401);
+    $permiso->message = NO_TOKEN_MESSAGE;
 }
 
-$response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
-
-exit;
+$api_utils->response($permiso->status, $permiso->message, $permiso->data, $authorization->permises);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

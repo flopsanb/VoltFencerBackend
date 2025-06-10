@@ -31,7 +31,7 @@ if (
     http_response_code(400);
     $api_utils->response(false, 'Credenciales inválidas');
     $response = $api_utils->response($status, $message, $data, $permises);
-echo json_encode($response, JSON_PRETTY_PRINT);
+    echo json_encode($response, JSON_PRETTY_PRINT);
 
     exit;
 }
