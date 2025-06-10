@@ -16,6 +16,12 @@ $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
 $api_utils->displayErrors(); // Desactiva esto en producción
 
+// 🔥 CORTA si es una petición preflight OPTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 // Decodifica el token desde la petición
 $request = json_decode(file_get_contents("php://input"), true);
 $token = $request["token"] ?? null;
