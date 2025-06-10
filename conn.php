@@ -84,14 +84,30 @@ class Authorization extends Conexion {
     }
 
     private function getAuthorizationHeader(): ?string {
-        if (isset($_SERVER['Authorization'])) return trim($_SERVER["Authorization"]);
-        if (isset($_SERVER['HTTP_AUTHORIZATION'])) return trim($_SERVER["HTTP_AUTHORIZATION"]);
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            return trim($_SERVER["HTTP_AUTHORIZATION"]);
+        }
+
+        if (isset($_SERVER['Authorization'])) {
+            return trim($_SERVER["Authorization"]);
+        }
+
+        if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            return trim($_SERVER["REDIRECT_HTTP_AUTHORIZATION"]);
+        }
+
         if (function_exists('apache_request_headers')) {
             $headers = apache_request_headers();
-            if (isset($headers['Authorization'])) return trim($headers["Authorization"]);
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    return trim($value);
+                }
+            }
         }
+
         return null;
     }
+
 
     private function getBearerToken(): void {
         $headers = $this->getAuthorizationHeader();
