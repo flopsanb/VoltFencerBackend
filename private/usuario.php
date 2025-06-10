@@ -125,6 +125,7 @@ if (!$status && http_response_code() === 200) {
 }
 
 // Respuesta final
-$api_utils->response($status, $message, $data, $authorization->permises);
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+$response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
 exit;

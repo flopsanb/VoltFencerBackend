@@ -94,5 +94,6 @@ if ($authorization->token_valido) {
 }
 
 // Respuesta final
-$api_utils->response($empresa->status, $empresa->message, $empresa->data, $authorization->permises);
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+$response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+

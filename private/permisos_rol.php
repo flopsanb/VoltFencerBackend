@@ -90,11 +90,7 @@ if ($authorization->token_valido) {
     http_response_code(401);
 }
 
-$api_utils->response(
-    $permiso->status,
-    $permiso->message,
-    $permiso->data ?? null,
-    $authorization->permises ?? []
-);
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+$response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
 exit;

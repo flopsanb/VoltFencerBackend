@@ -15,7 +15,9 @@ $api_utils->displayErrors(); // Quitar en producción
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     $api_utils->response(false, 'Método no permitido');
-    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    $response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
     exit;
 }
 
@@ -52,5 +54,6 @@ if ($authorization->token_valido) {
 }
 
 // Respuesta
-$api_utils->response($log->status, $log->message, $log->data, $authorization->permises ?? []);
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+$response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+

@@ -21,7 +21,9 @@ $data = null;
 if (!$authorization->token_valido) {
     http_response_code(401);
     $api_utils->response(false, NO_TOKEN_MESSAGE, null);
-    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    $response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
     exit;
 }
 
@@ -31,7 +33,9 @@ $usuario_post = $request['user'] ?? null;
 if (!$usuario_post || $usuario_post !== $usuario_token) {
     http_response_code(403);
     $api_utils->response(false, 'Usuario no coincide con el token');
-    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    $response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
     exit;
 }
 
@@ -62,5 +66,7 @@ try {
     $api_utils->response(false, 'Error al cerrar sesión', $e->getMessage());
 }
 
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+$response = $api_utils->response($status, $message, $data, $permises);
+echo json_encode($response, JSON_PRETTY_PRINT);
+
 exit;
