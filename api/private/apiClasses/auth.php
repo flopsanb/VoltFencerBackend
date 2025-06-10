@@ -2,10 +2,10 @@
 /**
  * Clase de autenticación y gestión de sesiones
  * 
- * Implementa login, verificación de tokens, y recuperación de permisos.
+ * Implementa login, verificación de tokens y recuperación de permisos.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/../conn.php';
@@ -19,7 +19,7 @@ class Auth extends Conexion {
     private $datos_usuarios;
     const SEED = "An[oojlHxsBnqD=FwiP[k[L3YRv@ei|M=}|SZ}~qynM~Gc8p3x0L1Yxs[dtB";
 
-    function __construct() {
+    public function __construct() {
         parent::__construct();
     }
 
@@ -31,6 +31,7 @@ class Auth extends Conexion {
                 try {
                     $random = rand(1000000, 9999999);
                     $token_user = $this->datos_usuarios["id_usuario"] . $this->datos_usuarios["usuario"] . $random;
+
                     $authorization = new Authorization();
                     $authorization->encryptToken($token_user, self::SEED);
 
@@ -51,6 +52,8 @@ class Auth extends Conexion {
                     ];
 
                     $this->status = true;
+                    $this->message = 'Login correcto';
+
                 } catch (PDOException $e) {
                     $this->message = 'Error al guardar el token: ' . $e->getMessage();
                 }
@@ -69,6 +72,7 @@ class Auth extends Conexion {
     private function getDatosUsuarios($user, $password) {
         try {
             $hash = md5($password);
+
             $stmt = $this->conexion->prepare(
                 "SELECT u.*, r.nombre_rol 
                  FROM usuarios u 
@@ -101,9 +105,11 @@ class Auth extends Conexion {
             if ($permisos) {
                 $this->status = true;
                 $this->data = $permisos;
+                $this->message = 'Token válido';
             } else {
                 $this->message = 'Token inválido o sin permisos';
             }
+
         } catch (PDOException $e) {
             $this->message = 'Error al verificar permisos: ' . $e->getMessage();
         }
@@ -123,9 +129,11 @@ class Auth extends Conexion {
             $datos = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($datos && time() < $datos['token_expira']) {
                 $this->status = true;
+                $this->message = 'Token válido';
             } else {
                 $this->message = 'Token expirado o inválido';
             }
+
         } catch (PDOException $e) {
             $this->message = 'Error al validar el token: ' . $e->getMessage();
         }
@@ -145,6 +153,7 @@ class Auth extends Conexion {
             } else {
                 $this->message = 'El usuario no existe';
             }
+
         } catch (PDOException $e) {
             $this->message = 'Error al comprobar usuario: ' . $e->getMessage();
         }

@@ -2,13 +2,11 @@
 /**
  * Clase para gestión de registros de actividad (logs)
  * 
- * Esta clase implementa funcionalidades para registrar y consultar
- * eventos importantes del sistema. Permite mantener un historial
- * de acciones realizadas por los usuarios para fines de auditoría,
- * seguridad y seguimiento de actividades.
+ * Permite registrar eventos importantes del sistema, mantener trazabilidad
+ * de acciones realizadas por los usuarios y auditar comportamientos clave.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/../conn.php';
@@ -19,12 +17,12 @@ class Log extends Conexion {
     public $message = null;
     public $data = null;
 
-    function __construct() {
+    public function __construct() {
         parent::__construct();
     }
 
     /**
-     * Recupera todos los registros de log
+     * Recupera todos los registros de log (solo lectura, sin filtros)
      * 
      * @return void
      */
@@ -34,33 +32,40 @@ class Log extends Conexion {
             $stmt->execute();
             $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->status = true;
+            $this->message = 'Logs recuperados correctamente';
         } catch (PDOException $e) {
             $this->message = 'Error al recuperar los logs: ' . $e->getMessage();
         }
+
         $this->closeConnection();
     }
 
     /**
-     * Genera un nuevo registro de log
+     * Genera un nuevo log en la tabla `sgi_logs`
      * 
-     * @param int $id_tipo_log
-     * @param string $contenido
-     * @param string|null $usuario
-     * @return bool
+     * @param int         $id_tipo_log  Tipo del evento (FK)
+     * @param string      $contenido    Descripción del evento
+     * @param string|null $usuario      Usuario (se puede obtener desde sesión)
+     * 
+     * @return bool  True si se guarda correctamente, false en caso contrario
      */
     public function generateLog($id_tipo_log, $contenido, $usuario = null) {
         try {
-            if (!$id_tipo_log || !$contenido) return false;
+            if (empty($id_tipo_log) || empty($contenido)) {
+                error_log("[❌] generateLog: Falta tipo o contenido del log");
+                return false;
+            }
 
-            if ($usuario === null && isset($_SESSION['id_usuario'])) {
+            // Si no se proporciona usuario, intenta sacarlo desde sesión
+            if (!$usuario && isset($_SESSION['id_usuario'])) {
                 $stmt = $this->conexion->prepare("SELECT usuario FROM sgi_usuarios WHERE id_usuario = :id_usuario");
                 $stmt->bindParam(":id_usuario", $_SESSION['id_usuario'], PDO::PARAM_INT);
                 $stmt->execute();
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                $usuario = $result['usuario'] ?? 'desconocido';
+                $res = $stmt->fetch(PDO::FETCH_ASSOC);
+                $usuario = $res['usuario'] ?? 'desconocido';
             }
 
-            // Obtener IP real sin clase externa
+            // IP simplificada, sin dependencias externas
             $ip = $_SERVER['HTTP_CLIENT_IP'] 
                 ?? $_SERVER['HTTP_X_FORWARDED_FOR'] 
                 ?? $_SERVER['REMOTE_ADDR'] 
@@ -83,4 +88,3 @@ class Log extends Conexion {
         }
     }
 }
-?>

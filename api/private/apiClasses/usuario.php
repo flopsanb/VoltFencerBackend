@@ -4,7 +4,7 @@
  * Permite operaciones CRUD y modificación de perfil según permisos.
  * 
  * @author Francisco Lopez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -15,13 +15,18 @@ class Usuario extends Conexion implements crud {
 
     public $status = false;
     public $message = null;
-    public $data = null;
+    public $data = [];
 
     const ROUTE = 'usuarios';
     const ROUTE_PROFILE = 'profile';
 
     function __construct() {
         parent::__construct();
+    }
+
+    private function validarRolEmpresa($id_empresa, $id_rol) {
+        $auth = $GLOBALS['authorization']->permises;
+        return $auth['id_rol'] === 3 && ($id_empresa != $auth['id_empresa'] || !in_array($id_rol, [3, 4]));
     }
 
     public function get() {
@@ -57,9 +62,10 @@ class Usuario extends Conexion implements crud {
 
             if ($stmt->execute()) {
                 $this->status = true;
-                $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
             }
         } catch (PDOException $e) {
+            $this->status = false;
             $this->message = $e->getMessage();
         }
         $this->closeConnection();
@@ -67,8 +73,6 @@ class Usuario extends Conexion implements crud {
 
     public function create($data) {
         $auth = $GLOBALS['authorization']->permises;
-        $id_rol_token = $auth['id_rol'];
-        $id_empresa_token = $auth['id_empresa'];
 
         $usuario = $data['usuario'] ?? null;
         $password = isset($data['password']) ? md5($data['password']) : null;
@@ -78,12 +82,10 @@ class Usuario extends Conexion implements crud {
         $id_empresa = $data['id_empresa'] ?? null;
         $observaciones = $data['observaciones'] ?? '';
 
-        if ($id_rol_token === 3) {
-            if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
-                $this->status = false;
-                $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
-                return;
-            }
+        if ($this->validarRolEmpresa($id_empresa, $id_rol)) {
+            $this->status = false;
+            $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
+            return;
         }
 
         try {
@@ -134,15 +136,14 @@ class Usuario extends Conexion implements crud {
         $id_empresa = $data['id_empresa'];
         $habilitado = $data['habilitado'] ? 1 : 0;
 
-        if ($id_rol_token === 3) {
-            if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
-                $this->status = false;
-                $this->message = 'No puedes editar usuarios fuera de tu empresa o con rol superior';
-                return;
-            }
+        if ($this->validarRolEmpresa($id_empresa, $id_rol)) {
+            $this->status = false;
+            $this->message = 'No puedes editar usuarios fuera de tu empresa o con rol superior';
+            return;
         }
 
         $passwordQuery = '';
+        $password = null;
         if (!empty($data['password'])) {
             $passwordQuery = ', pass_user = :password';
             $password = md5($data['password']);
@@ -168,8 +169,7 @@ class Usuario extends Conexion implements crud {
             $stmt->bindParam(":habilitado", $habilitado);
             $stmt->bindParam(":observaciones", $observaciones);
             $stmt->bindParam(":id_usuario", $id_usuario);
-
-            if (!empty($data['password'])) {
+            if ($password) {
                 $stmt->bindParam(":password", $password);
             }
 
@@ -178,9 +178,11 @@ class Usuario extends Conexion implements crud {
                 $this->message = 'Usuario actualizado correctamente';
                 $this->getUserById($id_usuario);
             } else {
+                $this->status = false;
                 $this->message = 'Error al actualizar';
             }
         } catch (PDOException $e) {
+            $this->status = false;
             $this->message = $e->getMessage();
         }
 
@@ -192,6 +194,7 @@ class Usuario extends Conexion implements crud {
         $nombre_publico = $data['nombrePublico'];
 
         $passwordQuery = '';
+        $password = null;
         if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']) {
             $password = md5($data['nuevaPassword']);
             $passwordQuery = ', pass_user = :password';
@@ -207,8 +210,7 @@ class Usuario extends Conexion implements crud {
             $stmt->bindParam(":usuario", $usuario);
             $stmt->bindParam(":nombre_publico", $nombre_publico);
             $stmt->bindParam(":token", $token);
-
-            if (!empty($password)) {
+            if ($password) {
                 $stmt->bindParam(":password", $password);
             }
 
@@ -216,9 +218,11 @@ class Usuario extends Conexion implements crud {
                 $this->status = true;
                 $this->message = 'Perfil actualizado correctamente';
             } else {
+                $this->status = false;
                 $this->message = 'No se pudo actualizar el perfil';
             }
         } catch (PDOException $e) {
+            $this->status = false;
             $this->message = $e->getMessage();
         }
 
@@ -252,9 +256,11 @@ class Usuario extends Conexion implements crud {
                 $this->message = 'Usuario eliminado correctamente';
                 $this->data = $id;
             } else {
+                $this->status = false;
                 $this->message = 'Error al eliminar el usuario';
             }
         } catch (PDOException $e) {
+            $this->status = false;
             $this->message = $e->getMessage();
         }
 
@@ -272,8 +278,9 @@ class Usuario extends Conexion implements crud {
                                               WHERE u.id_usuario = :id_usuario");
             $stmt->bindParam(":id_usuario", $id_usuario);
             $stmt->execute();
-            $this->data = $stmt->fetch(PDO::FETCH_ASSOC);
+            $this->data = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
         } catch (PDOException $e) {
+            $this->status = false;
             $this->message = $e->getMessage();
         }
     }

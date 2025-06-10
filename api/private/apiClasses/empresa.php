@@ -2,13 +2,11 @@
 /**
  * Clase para gestión de empresas
  * 
- * Esta clase implementa operaciones CRUD para entidades de tipo Empresa.
- * Permite la creación, consulta, actualización y eliminación de empresas
- * en el sistema, con validaciones según el rol del usuario que realiza
- * las operaciones.
+ * Implementa operaciones CRUD para entidades de tipo Empresa.
+ * Incluye validaciones según el rol del usuario.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -22,16 +20,15 @@ class Empresa extends Conexion implements crud {
 
     const ROUTE = 'empresas';
 
-    function __construct() {
+    public function __construct() {
         parent::__construct();
     }
 
     public function get() {
         try {
             $authorization = $GLOBALS['authorization'] ?? null;
-            $datos = $authorization ? $authorization->permises : [];
-            $id_rol = $datos['id_rol'] ?? null;
-            $id_empresa = $datos['id_empresa'] ?? null;
+            $id_rol = $authorization->permises['id_rol'] ?? null;
+            $id_empresa = $authorization->permises['id_empresa'] ?? null;
 
             $query = "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas";
             if (in_array($id_rol, [3, 4])) {
@@ -48,6 +45,7 @@ class Empresa extends Conexion implements crud {
             $stmt->execute();
             $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->status = true;
+
         } catch (PDOException $e) {
             $this->message = 'Error al obtener empresas: ' . $e->getMessage();
         }
@@ -62,13 +60,17 @@ class Empresa extends Conexion implements crud {
                 return;
             }
 
-            $stmt = $this->conexion->prepare("INSERT INTO empresas (nombre_empresa, logo_url) VALUES (:nombre_empresa, :logo_url)");
+            $stmt = $this->conexion->prepare(
+                "INSERT INTO empresas (nombre_empresa, logo_url) 
+                 VALUES (:nombre_empresa, :logo_url)"
+            );
             $stmt->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
             $stmt->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
             $stmt->execute();
 
             $this->status = true;
             $this->message = 'Empresa creada correctamente';
+
         } catch (PDOException $e) {
             $this->message = 'Error al crear empresa: ' . $e->getMessage();
         }
@@ -83,7 +85,11 @@ class Empresa extends Conexion implements crud {
                 return;
             }
 
-            $stmt = $this->conexion->prepare("UPDATE empresas SET nombre_empresa = :nombre_empresa, logo_url = :logo_url WHERE id_empresa = :id_empresa");
+            $stmt = $this->conexion->prepare(
+                "UPDATE empresas 
+                 SET nombre_empresa = :nombre_empresa, logo_url = :logo_url 
+                 WHERE id_empresa = :id_empresa"
+            );
             $stmt->bindParam(':id_empresa', $data['id_empresa'], PDO::PARAM_INT);
             $stmt->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
             $stmt->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
@@ -91,6 +97,7 @@ class Empresa extends Conexion implements crud {
 
             $this->status = true;
             $this->message = 'Empresa actualizada correctamente';
+
         } catch (PDOException $e) {
             $this->message = 'Error al actualizar empresa: ' . $e->getMessage();
         }
@@ -105,12 +112,16 @@ class Empresa extends Conexion implements crud {
                 return;
             }
 
-            $stmt = $this->conexion->prepare("DELETE FROM empresas WHERE id_empresa = :id_empresa");
+            $stmt = $this->conexion->prepare(
+                "DELETE FROM empresas 
+                 WHERE id_empresa = :id_empresa"
+            );
             $stmt->bindParam(':id_empresa', $id, PDO::PARAM_INT);
             $stmt->execute();
 
             $this->status = true;
             $this->message = 'Empresa eliminada correctamente';
+
         } catch (PDOException $e) {
             $this->message = 'Error al eliminar empresa: ' . $e->getMessage();
         }
@@ -125,7 +136,11 @@ class Empresa extends Conexion implements crud {
                 return;
             }
 
-            $stmt = $this->conexion->prepare("SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas WHERE id_empresa = :id_empresa");
+            $stmt = $this->conexion->prepare(
+                "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url 
+                 FROM empresas 
+                 WHERE id_empresa = :id_empresa"
+            );
             $stmt->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
             $stmt->execute();
 
@@ -135,6 +150,7 @@ class Empresa extends Conexion implements crud {
             if (!$this->data) {
                 $this->message = 'Empresa no encontrada';
             }
+
         } catch (PDOException $e) {
             $this->message = 'Error al obtener empresa: ' . $e->getMessage();
         }

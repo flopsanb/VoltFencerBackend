@@ -2,20 +2,18 @@
 /**
  * Clase para gestión de estados de conexión de usuarios
  * 
- * Esta clase implementa funcionalidades para registrar y consultar
- * la actividad en tiempo real de los usuarios en el sistema.
- * Permite conocer qué usuarios están actualmente conectados
- * basándose en su última actividad registrada.
+ * Permite registrar actividad en tiempo real y consultar
+ * qué usuarios están actualmente activos.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/../conn.php';
 require_once __DIR__ . '/interfaces/crud.php';
 
-class EstadoConexion extends Conexion
-{
+class EstadoConexion extends Conexion {
+
     public $status = false;
     public $message = null;
     public $data = null;
@@ -25,14 +23,14 @@ class EstadoConexion extends Conexion
     }
 
     /**
-     * Registra la actividad de un usuario
+     * Registra la última actividad del usuario (ping keep-alive)
      * 
      * @param int $id_usuario
      * @return void
      */
     public function registrarActividad($id_usuario) {
         try {
-            if (!$id_usuario || !is_numeric($id_usuario)) {
+            if (!is_numeric($id_usuario) || $id_usuario <= 0) {
                 $this->message = 'ID de usuario inválido';
                 return;
             }
@@ -46,6 +44,7 @@ class EstadoConexion extends Conexion
 
             $this->status = true;
             $this->message = 'Actividad registrada correctamente';
+
         } catch (PDOException $e) {
             $this->message = 'Error al registrar la actividad: ' . $e->getMessage();
         }
@@ -54,7 +53,7 @@ class EstadoConexion extends Conexion
     }
 
     /**
-     * Obtiene los usuarios actualmente conectados (últimos 3 minutos)
+     * Obtiene IDs de usuarios conectados en los últimos 3 minutos
      * 
      * @return void
      */
@@ -70,8 +69,9 @@ class EstadoConexion extends Conexion
             $this->data = $stmt->fetchAll(PDO::FETCH_COLUMN);
             $this->status = true;
             $this->message = 'Usuarios conectados obtenidos correctamente';
+
         } catch (PDOException $e) {
-            $this->message = 'Error al obtener los usuarios conectados: ' . $e->getMessage();
+            $this->message = 'Error al obtener usuarios conectados: ' . $e->getMessage();
         }
 
         $this->closeConnection();
