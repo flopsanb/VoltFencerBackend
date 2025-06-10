@@ -6,7 +6,7 @@
  * Se usa para validar la disponibilidad durante el registro.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * @version 1.2
  */
 
 // Requiere dependencias necesarias
@@ -18,19 +18,23 @@ $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
 $api_utils->displayErrors(); // Desactiva en producción
 
-// Decodifica datos JSON del cuerpo de la petición
 $request = json_decode(file_get_contents("php://input"), true);
 $usuario = $request["usuario"] ?? null;
 
-// Instancia de autenticación
 $auth = new Auth();
 
-// Verifica existencia del usuario
-if ($usuario) {
-    $auth->comprobarUsuario($usuario);
-    $api_utils->response($auth->status, $auth->message);
-} else {
-    $api_utils->response(false, "Usuario no proporcionado");
+try {
+    if ($usuario && is_string($usuario) && trim($usuario) !== '') {
+        $auth->comprobarUsuario($usuario);
+        http_response_code(200);
+        $api_utils->response($auth->status, $auth->message, $auth->data ?? null);
+    } else {
+        http_response_code(400);
+        $api_utils->response(false, "Usuario no proporcionado o inválido");
+    }
+} catch (Exception $e) {
+    http_response_code(500);
+    $api_utils->response(false, "Error al comprobar el usuario", $e->getMessage());
 }
 
 // Respuesta final

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint para gestión de tickets de soporte
  * 
@@ -6,7 +8,7 @@
  * Solo permite POST y requiere token de autenticación válido.
  * 
  * @author Francisco
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/apiClasses/soporte.php';
@@ -34,28 +36,29 @@ $soporte = new Soporte();
 if ($authorization->token_valido) {
     error_log("[🔐] Token válido. Procesando...");
     try {
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case ApiUtils::POST:
-                error_log("[➡️] Método POST recibido");
-                $soporte->crearTicket($request);
-                break;
-            default:
-                $soporte->status = false;
-                $soporte->message = 'Método no soportado';
-                error_log("[🚫] Método no soportado: " . $_SERVER['REQUEST_METHOD']);
+        if ($_SERVER['REQUEST_METHOD'] === ApiUtils::POST) {
+            error_log("[➡️] Método POST recibido");
+            $soporte->crearTicket($request);
+        } else {
+            $soporte->status = false;
+            $soporte->message = 'Método no soportado';
+            error_log("[🚫] Método no soportado: " . $_SERVER['REQUEST_METHOD']);
+            http_response_code(405);
         }
     } catch (Exception $e) {
         $soporte->status = false;
         $soporte->message = 'Error inesperado en el endpoint de soporte';
         $soporte->data = $e->getMessage();
         error_log("[💥] Excepción atrapada: " . $e->getMessage());
+        http_response_code(500);
     }
 } else {
     $soporte->status = false;
-    $soporte->message = NO_TOKEN_MESSAGE;
+    $soporte->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente';
     error_log("[⛔] Token inválido. Acceso denegado.");
+    http_response_code(401);
 }
 
 $api_utils->response($soporte->status, $soporte->message, $soporte->data);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-?>
+exit;

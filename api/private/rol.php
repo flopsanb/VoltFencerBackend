@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint para gestión de roles
  * 
@@ -7,7 +9,7 @@
  * y permisos específicos para cada operación.
  * 
  * @author  Francisco Lopez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/apiClasses/rol.php';
@@ -22,16 +24,16 @@ $authorization = new Authorization();
 $authorization->comprobarToken();
 
 $request = json_decode(file_get_contents("php://input"), true);
-$id = $_GET["id"] ?? null;
-
-$rol = new Rol();
+$id      = $_GET["id"] ?? null;
+$rol     = new Rol();
 
 if ($authorization->token_valido) {
     try {
-        switch ($_SERVER['REQUEST_METHOD']) {
+        $method = $_SERVER['REQUEST_METHOD'];
 
+        switch ($method) {
             case ApiUtils::GET:
-                $rol->get();
+                $rol->data = $rol->get();  // Asignar resultado
                 $authorization->getPermision(Rol::ROUTE);
                 break;
 
@@ -40,8 +42,9 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol->create($request);
                 } else {
-                    $rol->status = false;
-                    $rol->message = ADD_ROL_NOT_PERMISION;
+                    $rol->status  = false;
+                    $rol->message = defined('ADD_ROL_NOT_PERMISION') ? ADD_ROL_NOT_PERMISION : 'No tienes permiso para añadir roles.';
+                    http_response_code(403);
                 }
                 break;
 
@@ -50,8 +53,9 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol->update($request);
                 } else {
-                    $rol->status = false;
-                    $rol->message = EDIT_ROL_NOT_PERMISION;
+                    $rol->status  = false;
+                    $rol->message = defined('EDIT_ROL_NOT_PERMISION') ? EDIT_ROL_NOT_PERMISION : 'No tienes permiso para editar roles.';
+                    http_response_code(403);
                 }
                 break;
 
@@ -60,26 +64,31 @@ if ($authorization->token_valido) {
                 if ($authorization->have_permision) {
                     $rol->delete($id);
                 } else {
-                    $rol->status = false;
-                    $rol->message = DELETE_ROL_NOT_PERMISION;
+                    $rol->status  = false;
+                    $rol->message = defined('DELETE_ROL_NOT_PERMISION') ? DELETE_ROL_NOT_PERMISION : 'No tienes permiso para eliminar roles.';
+                    http_response_code(403);
                 }
                 break;
 
             default:
-                $rol->status = false;
+                $rol->status  = false;
                 $rol->message = "Método no soportado";
-                break;
+                http_response_code(405);
         }
+
     } catch (Exception $e) {
-        $rol->status = false;
+        $rol->status  = false;
         $rol->message = "Error inesperado en el endpoint de rol";
-        $rol->data = $e->getMessage();
+        $rol->data    = $e->getMessage();
+        http_response_code(500);
     }
+
 } else {
-    $rol->status = false;
-    $rol->message = NO_TOKEN_MESSAGE;
+    $rol->status  = false;
+    $rol->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido o ausente.';
+    http_response_code(401);
 }
 
-$api_utils->response($rol->status, $rol->message, $rol->data, $authorization->permises);
+$api_utils->response($rol->status, $rol->message, $rol->data ?? null, $authorization->permises ?? []);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-?>
+exit;

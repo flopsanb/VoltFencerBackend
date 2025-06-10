@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * ApiUtils - Clase de utilidades para APIs REST
  * 
@@ -7,7 +8,7 @@ declare(strict_types=1);
  * y respuestas estándar para endpoints REST.
  * 
  * @author  Francisco Lopez
- * @version 1.1
+ * @version 1.2
  */
 
 require_once __DIR__ . '/text.php';
@@ -26,7 +27,7 @@ class ApiUtils {
      *
      * @param string $method Método permitido o ALL_HEADERS
      */
-    public function setHeaders($method) {
+    public function setHeaders(string $method): void {
         header("Access-Control-Allow-Origin: https://voltfencerfrontend.onrender.com");
         header("Access-Control-Allow-Credentials: true");
         header("Access-Control-Max-Age: 86400");
@@ -39,8 +40,7 @@ class ApiUtils {
             header("Access-Control-Allow-Methods: {$method}, OPTIONS");
         }
 
-        // Si la petición es OPTIONS, cortamos aquí (muy común en despliegues en la nube)
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
             exit();
         }
@@ -49,9 +49,9 @@ class ApiUtils {
     /**
      * Muestra errores detallados en desarrollo
      */
-    public function displayErrors() {
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
+    public function displayErrors(): void {
+        ini_set('display_errors', '1');
+        ini_set('display_startup_errors', '1');
         error_reporting(E_ALL);
     }
 
@@ -63,7 +63,7 @@ class ApiUtils {
      * @param mixed $data
      * @param mixed $permises
      */
-    public function response($status, $message, $data = null, $permises = null) {
+    public function response(bool $status, string $message, $data = null, $permises = null): void {
         $this->response = [
             'ok'       => $status,
             'message'  => $message,
@@ -72,4 +72,3 @@ class ApiUtils {
         ];
     }
 }
-?>

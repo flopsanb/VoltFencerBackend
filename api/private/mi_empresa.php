@@ -1,12 +1,10 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Endpoint para gestión de la empresa del usuario
- * 
  * Permite consultar y actualizar información de la empresa propia,
  * con verificación de permisos específicos.
- * 
- * @author  Francisco Lopez
- * @version 1.1
  */
 
 require_once __DIR__ . '/apiClasses/empresa.php';
@@ -22,60 +20,75 @@ $authorization->comprobarToken();
 
 $empresa = new Empresa();
 $request = json_decode(file_get_contents("php://input"), true);
+$data = null;
 
 if ($authorization->token_valido) {
     try {
         $id_empresa_usuario = $authorization->permises['id_empresa'] ?? null;
 
-        switch ($_SERVER['REQUEST_METHOD']) {
+        if (!$id_empresa_usuario) {
+            $empresa->status = false;
+            $empresa->message = 'ID de empresa no disponible en el token';
+            http_response_code(400);
+        } else {
+            switch ($_SERVER['REQUEST_METHOD']) {
 
-            case ApiUtils::GET:
-                $authorization->havePermision(ApiUtils::GET, 'mi_empresa');
-                if ($authorization->have_permision) {
-                    $empresa->getById($id_empresa_usuario);
-                } else {
+                case ApiUtils::GET:
+                    $authorization->havePermision(ApiUtils::GET, 'mi_empresa');
+                    if ($authorization->have_permision) {
+                        $data = $empresa->getById($id_empresa_usuario);
+                    } else {
+                        $empresa->status = false;
+                        $empresa->message = 'No tienes permiso para ver tu empresa';
+                        http_response_code(403);
+                    }
+                    break;
+
+                case ApiUtils::POST:
                     $empresa->status = false;
-                    $empresa->message = 'No tienes permiso para ver tu empresa';
-                }
-                break;
+                    $empresa->message = 'No tienes permiso para crear empresa desde este endpoint';
+                    http_response_code(405);
+                    break;
 
-            case ApiUtils::POST:
-                $empresa->status = false;
-                $empresa->message = 'No tienes permiso para crear empresa desde este endpoint';
-                break;
+                case ApiUtils::PUT:
+                    $authorization->havePermision(ApiUtils::PUT, 'mi_empresa');
+                    if ($authorization->have_permision) {
+                        $request['id_empresa'] = $id_empresa_usuario;
+                        $empresa->update($request);
+                    } else {
+                        $empresa->status = false;
+                        $empresa->message = 'No tienes permiso para editar tu empresa';
+                        http_response_code(403);
+                    }
+                    break;
 
-            case ApiUtils::PUT:
-                $authorization->havePermision(ApiUtils::PUT, 'mi_empresa');
-                if ($authorization->have_permision) {
-                    $request['id_empresa'] = $id_empresa_usuario;
-                    $empresa->update($request);
-                } else {
+                case ApiUtils::DELETE:
                     $empresa->status = false;
-                    $empresa->message = 'No tienes permiso para editar tu empresa';
-                }
-                break;
+                    $empresa->message = 'No tienes permiso para eliminar empresa desde este endpoint';
+                    http_response_code(405);
+                    break;
 
-            case ApiUtils::DELETE:
-                $empresa->status = false;
-                $empresa->message = 'No tienes permiso para eliminar empresa desde este endpoint';
-                break;
-
-            default:
-                $empresa->status = false;
-                $empresa->message = 'Método no soportado en este endpoint';
-                break;
+                default:
+                    $empresa->status = false;
+                    $empresa->message = 'Método no soportado en este endpoint';
+                    http_response_code(405);
+                    break;
+            }
         }
 
     } catch (Exception $e) {
         $empresa->status = false;
         $empresa->message = 'Error inesperado en mi_empresa.php';
         $empresa->data = $e->getMessage();
+        http_response_code(500);
     }
 
 } else {
     $empresa->status = false;
-    $empresa->message = NO_TOKEN_MESSAGE;
+    $empresa->message = defined('NO_TOKEN_MESSAGE') ? NO_TOKEN_MESSAGE : 'Token inválido.';
+    http_response_code(401);
 }
 
-$api_utils->response($empresa->status, $empresa->message, $empresa->data, $authorization->permises);
+$api_utils->response($empresa->status, $empresa->message, $empresa->data ?? $data, $authorization->permises ?? []);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+exit;

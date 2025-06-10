@@ -1,32 +1,33 @@
 <?php
 /**
  * Endpoint para autenticación de usuarios
- * 
- * Procesa las credenciales recibidas y devuelve un token si son válidas.
- * 
- * @author  Francisco Lopez Sanchez
- * @version 1.1
+ * Procesa las credenciales y devuelve token si son válidas
  */
 
 require_once __DIR__ . '/apiClasses/auth.php';
 require_once __DIR__ . '/../api_utils.php';
 
-/**
- * Inicialización de utilidades de API
- * 
- * Solo se aceptan peticiones POST para este endpoint.
- */
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors(); // Activar solo en desarrollo
+$api_utils->displayErrors(); // OJO: quitar en producción
 
-/**
- * Procesamiento y validación de entrada
- */
+// Solo permitir POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    $api_utils->response(false, 'Método no permitido');
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    exit;
+}
+
+// Procesamiento de entrada
 $request = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($request['username']) || !isset($request['password'])) {
-    $api_utils->response(false, 'Faltan credenciales');
+if (
+    !isset($request['username']) || !is_string($request['username']) || trim($request['username']) === '' ||
+    !isset($request['password']) || !is_string($request['password']) || trim($request['password']) === ''
+) {
+    http_response_code(400);
+    $api_utils->response(false, 'Credenciales inválidas');
     echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
@@ -34,23 +35,16 @@ if (!isset($request['username']) || !isset($request['password'])) {
 $username = trim($request['username']);
 $password = trim($request['password']);
 
-if ($username === '' || $password === '') {
-    $api_utils->response(false, 'Usuario o contraseña vacíos');
-    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-    exit;
-}
+// 🔒 Registro controlado (nunca mostrar password)
+error_log("🔐 Intento de login para usuario: $username");
 
-// Registro de depuración (sin mostrar contraseña en producción)
-error_log("🔐 Intento de login para: $username");
-
-/**
- * Proceso de autenticación
- */
+// Autenticación
 $auth = new Auth();
 $auth->doLogin($username, $password);
 
-/**
- * Respuesta
- */
+// Definir código de respuesta según estado
+http_response_code($auth->status ? 200 : 401);
+
+// Respuesta
 $api_utils->response($auth->status, $auth->message, $auth->data);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
