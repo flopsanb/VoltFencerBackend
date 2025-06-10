@@ -9,7 +9,7 @@
  * @version 1.1
  */
 
-require_once('text.php');
+require_once(__DIR__ . '/text.php');
 
 class ApiUtils {
     const GET         = 'GET';
