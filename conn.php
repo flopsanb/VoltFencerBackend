@@ -156,6 +156,11 @@ class Authorization extends Conexion {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    public function isAdmin() {
+        $this->getIdRol();
+        $this->is_admin = ($this->id_rol === '1');
+    }
+    
     public function havePermision(string $method, string $route): void {
         $this->isAdmin();
         $api_utils = new ApiUtils();
