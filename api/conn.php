@@ -18,8 +18,8 @@ if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
 }
 setlocale(LC_ALL, 'es_ES');
 
-require_once('utils.php');
-require_once('api_utils.php');
+require_once __DIR__ . '/utils.php';
+require_once __DIR__ . '/api_utils.php';
 
 class Conexion {
     private static $DB_HOST;
