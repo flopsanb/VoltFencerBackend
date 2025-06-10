@@ -9,7 +9,6 @@ require_once __DIR__ . '/../api_utils.php';
 
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors(); // OJO: quitar en producción
 
 // Solo permitir POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -38,9 +37,6 @@ if (
 
 $username = trim($request['username']);
 $password = trim($request['password']);
-
-// 🔒 Registro controlado (nunca mostrar password)
-error_log("🔐 Intento de login para usuario: $username");
 
 // Autenticación
 $auth = new Auth();

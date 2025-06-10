@@ -9,7 +9,6 @@ require_once __DIR__ . '/../api_utils.php';
 
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::GET);
-$api_utils->displayErrors(); // Quitar en producción
 
 // Verificamos método
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -20,11 +19,6 @@ echo json_encode($response, JSON_PRETTY_PRINT);
 
     exit;
 }
-
-// Autorización
-$api_utils = new ApiUtils();
-$api_utils->setHeaders(ApiUtils::GET);
-$api_utils->displayErrors();
 
 $authorization = new Authorization();
 $authorization->comprobarToken();

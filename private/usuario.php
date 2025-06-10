@@ -11,16 +11,15 @@ require_once __DIR__ . '/apiClasses/usuario.php';
 
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
-$api_utils->displayErrors();
+
+
 
 $authorization = new Authorization();
 $authorization->comprobarToken();
-error_log("TOKEN VALIDEZ: " . ($authorization->token_valido ? "VÁLIDO" : "NO VÁLIDO"));
-error_log("TOKEN ENVIADO: " . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NO HAY'));
+
 $GLOBALS['authorization'] = $authorization;
 
 $request = json_decode(file_get_contents("php://input"), true);
-error_log("📥 Datos recibidos en POST: " . print_r($request, true));
 
 $usuario = new Usuario();
 

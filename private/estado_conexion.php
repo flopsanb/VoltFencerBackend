@@ -13,7 +13,8 @@ require_once __DIR__ . '/../api_utils.php';
 // Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
-$api_utils->displayErrors();
+
+
 
 $authorization = new Authorization();
 $authorization->comprobarToken();
@@ -25,8 +26,6 @@ $id_usuario = $authorization->id_usuario ?? null;
 
 if ($authorization->token_valido && $id_usuario) {
     try {
-        error_log("MÉTODO RECIBIDO: " . $_SERVER['REQUEST_METHOD']);
-
         switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::POST:
                 $conexion->registrarActividad($id_usuario);

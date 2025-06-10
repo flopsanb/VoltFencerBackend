@@ -1,7 +1,7 @@
 <?php
 // index.php - Router principal para el backend VoltFencer
 
-// Mostrar errores (puedes desactivarlo en producción)
+// Mostrar errores (se desactiva en producción)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 // Obtener la ruta solicitada
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
-// Normalizar (quitar `/api/` si aún lo usas desde frontend)
+// Normalizar (quitar `/api/` ya que no es necesario en Render)
 $normalizedPath = preg_replace('#^/api/#', '', ltrim($path, '/'));
 
 // Ruta completa del archivo dentro de /private

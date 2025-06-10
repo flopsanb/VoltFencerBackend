@@ -57,12 +57,11 @@ class Auth extends Conexion  {
                 $this->message = 'Usuario inhabilitado';
                 $this->data = ['habilitado' => 0];
                 $this->closeConnection();
-                return; // ✅ Esto evita que se sobreescriba
+                return;
             }
         } else {
             $this->message = 'Credenciales incorrectas';
         }
-        error_log("Inicio de sesion con exito.");
         $this->closeConnection();
     }
 

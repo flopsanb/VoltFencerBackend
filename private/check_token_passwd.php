@@ -15,7 +15,6 @@ require_once __DIR__ . '/../api_utils.php';
 // Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors();
 
 $request = json_decode(file_get_contents("php://input"), true);
 $auth = new Auth();

@@ -14,9 +14,8 @@ require_once __DIR__ . '/../api_utils.php';
 // Inicializa las utilidades
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors(); // ❌ Desactiva esto en producción
 
-// 🔥 CORTA si es una petición preflight OPTIONS
+// Response 200 si es una petición preflight OPTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();

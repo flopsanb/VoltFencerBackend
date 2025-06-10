@@ -18,7 +18,6 @@ class Soporte {
     public $data = null;
 
     public function crearTicket($request) {
-        error_log("[🛠️] Ejecutando Soporte::crearTicket");
 
         try {
             $titulo = $request['asunto'] ?? null;
@@ -27,13 +26,11 @@ class Soporte {
 
             if (!$titulo || !$mensaje) {
                 $this->message = 'Faltan campos obligatorios: título o mensaje';
-                error_log("[⚠️] Título o mensaje no recibidos");
                 return;
             }
 
             $usuario = $GLOBALS['authorization']->usuario;
 
-            error_log("[👤] Usuario autenticado: " . json_encode($usuario));
 
             $mail = new PHPMailer(true);
             $mail->SMTPDebug = 2;
@@ -74,19 +71,15 @@ class Soporte {
                 <p style='font-size:12px; color:#999;'>Sistema automático de soporte VoltFencer.</p>
             ";
 
-
-
             $mail->Body = $contenido;
 
             $mail->send();
 
             $this->status = true;
             $this->message = 'Ticket de soporte enviado correctamente';
-            error_log("[✅] Ticket enviado correctamente");
 
         } catch (Exception $e) {
             $this->message = 'Error al enviar el ticket: ' . $e->getMessage();
-            error_log("[❌] Error PHPMailer: " . $e->getMessage());
         }
     }
 }

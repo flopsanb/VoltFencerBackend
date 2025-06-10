@@ -17,7 +17,8 @@ require_once __DIR__ . '/../api_utils.php';
 
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
-$api_utils->displayErrors();
+
+
 
 $authorization = new Authorization();
 $authorization->comprobarToken();

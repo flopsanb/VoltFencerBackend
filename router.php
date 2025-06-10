@@ -12,5 +12,5 @@ if (php_sapi_name() === 'cli-server') {
     }
 }
 
-// Redirige todo a tu archivo principal (index.php) HOLA
+// Redirige todo a tu archivo principal (index.php)
 require_once __DIR__ . '/index.php';

@@ -9,14 +9,12 @@
  * @version 1.2
  */
 
-// Requiere dependencias necesarias
 require_once __DIR__ . '/apiClasses/auth.php';
 require_once __DIR__ . '/../api_utils.php';
 
 // Inicializa utilidades de API
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
-$api_utils->displayErrors(); // Desactiva en producción
 
 $request = json_decode(file_get_contents("php://input"), true);
 $usuario = $request["usuario"] ?? null;
