@@ -156,11 +156,18 @@ class Authorization extends Conexion {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    private function getIdRol() {
+        $sql = $this->conexion->prepare("SELECT id_rol FROM usuarios WHERE token_sesion = :token");
+        $sql->bindParam(":token", $this->token);
+        $sql->execute();
+        $this->id_rol = $sql->fetch(PDO::FETCH_ASSOC)["id_rol"];
+    }
+    
     public function isAdmin() {
         $this->getIdRol();
         $this->is_admin = ($this->id_rol === '1');
     }
-    
+
     public function havePermision(string $method, string $route): void {
         $this->isAdmin();
         $api_utils = new ApiUtils();
