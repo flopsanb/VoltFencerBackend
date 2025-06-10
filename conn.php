@@ -108,16 +108,25 @@ class Authorization extends Conexion {
     }
 
     private function getBearerToken(): void {
-        $headers = $this->getAuthorizationHeader();
-
-        if (!empty($headers) && preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
+        $header = $this->getAuthorizationHeader();
+        error_log("[🧠 HEADER COMPLETO] " . var_export($header, true));
+        if (!empty($header) && preg_match('/Bearer\s(\S+)/', $header, $matches)) {
             $this->token = $matches[1];
+            error_log("[✅ TOKEN EXTRAIDO] " . $this->token);
         } else {
+            error_log("[❌ TOKEN NO DETECTADO EN HEADER]");
         }
     }
 
     public function comprobarToken(): void {
         $this->getBearerToken();
+
+        if (empty($this->token)) {
+            error_log("[❌ TOKEN VACÍO EN comprobarToken]");
+            $this->token_valido = false;
+            return; // corto la ejecución para no llamar con null
+        }
+
         $datos = $this->obtenerPermisosDelUsuario($this->token);
 
         if ($datos) {
