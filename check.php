@@ -46,7 +46,7 @@ $paths = [
 ];
 
 foreach ($paths as $relativePath) {
-    $fullPath = __DIR__ . '/api/' . $relativePath;
+    $fullPath = __DIR__ . '/' . $relativePath;
     $exists = file_exists($fullPath);
 
     echo str_pad($relativePath, 50) . ($exists ? "✅ FOUND" : "❌ MISSING") . "\n";

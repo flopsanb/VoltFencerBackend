@@ -6,14 +6,14 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Obtener la ruta
+// Obtener la ruta solicitada
 $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
-// Normalizar ruta quitando "/api/" inicial si lo lleva
+// Normalizar (quitar `/api/` si aún lo usas desde frontend)
 $normalizedPath = preg_replace('#^/api/#', '', ltrim($path, '/'));
 
-// Construir la ruta completa del archivo a cargar
-$targetFile = __DIR__ . "/api/private/" . $normalizedPath;
+// Ruta completa del archivo dentro de /private
+$targetFile = __DIR__ . "/private/" . $normalizedPath;
 
 // Comprobar si el archivo existe y cargarlo
 if (is_file($targetFile)) {
