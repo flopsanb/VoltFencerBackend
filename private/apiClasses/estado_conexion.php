@@ -9,7 +9,7 @@
  * @version 1.2
  */
 
-require_once __DIR__ . '/../conn.php';
+require_once __DIR__ . '/../../conn.php';
 require_once __DIR__ . '/interfaces/crud.php';
 
 class EstadoConexion extends Conexion {

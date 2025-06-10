@@ -11,7 +11,7 @@
  */
 
 require_once 'interfaces/crud.php';
-require_once '../conn.php';
+require_once __DIR__ . '/../../conn.php';
 
 class Rol extends Conexion implements crud {
 

@@ -11,7 +11,7 @@
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
-require_once __DIR__ . '/../conn.php';
+require_once __DIR__ . '/../../conn.php';
 
 class PermisosRol extends Conexion implements crud {
 
