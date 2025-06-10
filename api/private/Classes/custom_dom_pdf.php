@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Classes/dompdf/autoload.inc.php';
+require_once __DIR__ . '/dompdf/autoload.inc.php';
 // reference the Dompdf namespace
 use Dompdf\Dompdf;
 
@@ -118,7 +118,6 @@ class CustomDomPDF extends Dompdf {
         $this->html .= '<link rel="stylesheet" href="Classes/css/'.$css.'.css" type="text/css">';
         $this->html .= '</head>';
     }
--
 }
 
 class PlantillaUtils {
