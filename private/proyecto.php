@@ -85,7 +85,14 @@ if (!$authorization->token_valido) {
     }
 }
 
-var_dump($proyecto->status); die();
+// COMPROBACIÓN DEL TIPO Y CONTENIDO
+header('Content-Type: text/plain'); // para que el navegador lo imprima tal cual
+echo "== DEBUG STATUS ==\n";
+echo "Tipo: " . gettype($proyecto->status) . "\n";
+echo "Valor: ";
+var_export($proyecto->status);
+echo "\n";
+die();
 
 $api_utils->response(
     $proyecto->status,
