@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Clase Utils
  * Funciones generales para la aplicación (fechas, IP, UUID, CLI, strings...)
@@ -27,10 +29,17 @@ class Utils {
      * @return string
      */
     public function getRealIP(): string {
-        return $_SERVER['HTTP_CLIENT_IP']
+        $ip = $_SERVER['HTTP_CLIENT_IP']
             ?? $_SERVER['HTTP_X_FORWARDED_FOR']
             ?? $_SERVER['REMOTE_ADDR']
             ?? '0.0.0.0';
+
+        // Si hay múltiples IPs separadas por coma, se toma la primera
+        if (strpos($ip, ',') !== false) {
+            $ip = explode(',', $ip)[0];
+        }
+
+        return trim($ip);
     }
 
     /**
@@ -91,6 +100,6 @@ class Utils {
      * @return string
      */
     public function zero_fill($valor, int $long = 0): string {
-        return str_pad($valor, $long, '0', STR_PAD_LEFT);
+        return str_pad((string)$valor, $long, '0', STR_PAD_LEFT);
     }
 }

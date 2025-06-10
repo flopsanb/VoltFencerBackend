@@ -9,14 +9,14 @@
  * @version 1.1
  */
 
-require_once(__DIR__ . '/apiClasses/auth.php');
-require_once(__DIR__ . '/../conn.php');
-require_once(__DIR__ . '/../api_utils.php');
+require_once __DIR__ . '/apiClasses/auth.php';
+require_once __DIR__ . '/../conn.php';
+require_once __DIR__ . '/../api_utils.php';
 
 // Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::GET);
-$api_utils->displayErrors(); // Desactívalo en producción
+$api_utils->displayErrors();
 
 $authorization = new Authorization();
 $authorization->comprobarToken();

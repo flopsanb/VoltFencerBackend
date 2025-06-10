@@ -10,9 +10,9 @@
  * @version 1.1
  */
 
-require_once(__DIR__ . '/apiClasses/rol_menu.php');
-require_once(__DIR__ . '/../conn.php');
-require_once(__DIR__ . '/../api_utils.php');
+require_once __DIR__ . '/apiClasses/rol_menu.php';
+require_once __DIR__ . '/../conn.php';
+require_once __DIR__ . '/../api_utils.php';
 
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);

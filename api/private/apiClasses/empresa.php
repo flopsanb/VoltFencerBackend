@@ -11,8 +11,8 @@
  * @version 1.1
  */
 
-require_once(__DIR__ . '/interfaces/crud.php');
-require_once(__DIR__ . '/../conn.php');
+require_once __DIR__ . '/interfaces/crud.php';
+require_once __DIR__ . '/../conn.php';
 
 class Empresa extends Conexion implements crud {
 

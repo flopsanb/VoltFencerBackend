@@ -219,7 +219,7 @@
 
 
   Version 1.3 :
-    - Removing the double include check. This is now done by include_once() and require_once()
+    - Removing the double include check. This is now done by include_once() and require_once ()
       PHP directives.
     - Changing the error handling mecanism : Remove the use of an external error library.
       The former PclError...() functions are replaced by internal equivalent methods.

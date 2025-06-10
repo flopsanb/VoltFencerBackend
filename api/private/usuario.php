@@ -4,9 +4,9 @@
  * RESTful para operaciones sobre entidad Usuario.
  */
 
-require_once(__DIR__ . '/../conn.php');
-require_once(__DIR__ . '/../api_utils.php');
-require_once(__DIR__ . '/../apiClasses/usuario.php');
+require_once __DIR__ . '/../conn.php';
+require_once __DIR__ . '/../api_utils.php';
+require_once __DIR__ . '/../apiClasses/usuario.php';
 
 // CORS & Preflight
 $api_utils = new ApiUtils();

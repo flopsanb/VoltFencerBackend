@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Conexión y Autorización para API REST adaptado para entorno online
  * 
@@ -8,18 +10,17 @@
  * - Mejoras para evitar problemas con session_start
  * 
  * @author  Francisco Lopez
- * @version 2.0
+ * @version 2.1
  */
 
-// Solo activa sesión si no está ya activa (evita errores en Railway)
 if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
-    ini_set('session.gc_maxlifetime', 3600);
+    ini_set('session.gc_maxlifetime', '3600');
     session_start();
 }
 setlocale(LC_ALL, 'es_ES');
 
-require_once('utils.php');
-require_once('api_utils.php');
+require_once __DIR__ . '/utils.php';
+require_once __DIR__ . '/api_utils.php';
 
 class Conexion {
     private static $DB_HOST;
@@ -31,7 +32,7 @@ class Conexion {
     public $conexion;
     public $id_usuario;
 
-    function __construct () {
+    public function __construct() {
         self::$DB_HOST     = getenv('DB_HOST')     ?: 'localhost';
         self::$DB_USERNAME = getenv('DB_USER')     ?: 'root';
         self::$DB_PASSWORD = getenv('DB_PASSWORD') ?: 'root';
@@ -42,23 +43,23 @@ class Conexion {
         $this->setVariablesSession();
     }
 
-    private function conectar() {
+    private function conectar(): void {
         $this->conexion = new PDO(
             "mysql:host=" . self::$DB_HOST . ";dbname=" . self::$DB_NAME . ";port=" . self::$DB_PORT,
             self::$DB_USERNAME,
             self::$DB_PASSWORD,
-            array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8")
+            [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]
         );
         $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
-    private function setVariablesSession() {
+    private function setVariablesSession(): void {
         if (isset($_SESSION['id_usuario'])) {
             $this->id_usuario = $_SESSION['id_usuario'];
         }
     }
 
-    public function closeConnection() {
+    public function closeConnection(): void {
         $this->conexion = null;
     }
 
@@ -74,15 +75,15 @@ class Authorization extends Conexion {
     public $token_encrypt;
     public $is_admin = false;
     public $permises = null;
-    private $id_rol = null;
     public $have_permision = false;
     public $usuario = null;
+    private $id_rol = null;
 
-    function __construct () {
+    public function __construct() {
         parent::__construct();
     }
 
-    private function getAuthorizationHeader() {
+    private function getAuthorizationHeader(): ?string {
         if (isset($_SERVER['Authorization'])) return trim($_SERVER["Authorization"]);
         if (isset($_SERVER['HTTP_AUTHORIZATION'])) return trim($_SERVER["HTTP_AUTHORIZATION"]);
         if (function_exists('apache_request_headers')) {
@@ -92,14 +93,14 @@ class Authorization extends Conexion {
         return null;
     }
 
-    private function getBearerToken() {
+    private function getBearerToken(): void {
         $headers = $this->getAuthorizationHeader();
         if (!empty($headers) && preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             $this->token = $matches[1];
         }
     }
 
-    public function comprobarToken() {
+    public function comprobarToken(): void {
         $this->getBearerToken();
         $datos = $this->obtenerPermisosDelUsuario($this->token);
 
@@ -114,12 +115,14 @@ class Authorization extends Conexion {
                 "rol"            => $datos["nombre_rol"],
                 "id_empresa"     => $datos["id_empresa"]
             ];
+            $this->id_rol = $datos["id_rol"];
+            $this->is_admin = ($this->id_rol === '1' || $this->id_rol === 1);
         } else {
             $this->token_valido = false;
         }
     }
 
-    private function obtenerPermisosDelUsuario($token) {
+    private function obtenerPermisosDelUsuario(string $token): ?array {
         $stmt = $this->conexion->prepare("
             SELECT u.id_usuario, u.nombre_publico, u.id_rol, u.id_empresa, u.usuario, r.nombre_rol,
                    p.*
@@ -130,22 +133,10 @@ class Authorization extends Conexion {
         ");
         $stmt->bindParam(":token", $token);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function getIdRol() {
-        $sql = $this->conexion->prepare("SELECT id_rol FROM usuarios WHERE token_sesion = :token");
-        $sql->bindParam(":token", $this->token);
-        $sql->execute();
-        $this->id_rol = $sql->fetch(PDO::FETCH_ASSOC)["id_rol"];
-    }
-
-    public function isAdmin() {
-        $this->getIdRol();
-        $this->is_admin = ($this->id_rol === '1' || $this->id_rol === 1);
-    }
-
-    public function havePermision($method, $route) {
+    public function havePermision(string $method, string $route): void {
         $this->isAdmin();
         $api_utils = new ApiUtils();
 
@@ -158,24 +149,24 @@ class Authorization extends Conexion {
             'usuarios' => [
                 'POST'   => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
                 'PUT'    => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
-                'DELETE'=> ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
+                'DELETE' => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
                 'GET'    => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa']
             ],
             'empresas' => [
                 'POST'   => ['crear_empresas'],
                 'PUT'    => ['crear_empresas'],
-                'DELETE'=> ['crear_empresas'],
+                'DELETE' => ['crear_empresas'],
                 'GET'    => ['crear_empresas']
             ],
             'proyectos' => [
                 'POST'   => ['crear_proyectos'],
                 'PUT'    => ['crear_proyectos'],
-                'DELETE'=> ['borrar_proyectos'],
+                'DELETE' => ['borrar_proyectos'],
                 'GET'    => ['crear_proyectos']
             ],
             'mi_empresa' => [
-                'GET'  => ['ver_usuarios_empresa'],
-                'PUT'  => ['gestionar_usuarios_empresa']
+                'GET' => ['ver_usuarios_empresa'],
+                'PUT' => ['gestionar_usuarios_empresa']
             ]
         ];
 
@@ -183,7 +174,7 @@ class Authorization extends Conexion {
         $permisos_necesarios = $map[$route][$method] ?? [];
 
         foreach ($permisos_necesarios as $permiso) {
-            if (isset($this->permises[$permiso]) && $this->permises[$permiso] == 1) {
+            if (!empty($this->permises[$permiso])) {
                 $this->have_permision = true;
                 break;
             }
@@ -192,11 +183,11 @@ class Authorization extends Conexion {
         error_log("[🔐 PERMISO] $method $route => " . ($this->have_permision ? "✅" : "❌"));
     }
 
-    public function havePermissionByTipo($tipo_permiso) {
+    public function havePermissionByTipo(string $tipo_permiso): bool {
         return isset($this->permises[$tipo_permiso]) && $this->permises[$tipo_permiso] == 1;
     }
 
-    public function getPermision($route) {
+    public function getPermision(string $route): void {
         $this->isAdmin();
         $this->permises = [
             "add" => $this->is_admin,
@@ -205,11 +196,11 @@ class Authorization extends Conexion {
         ];
     }
 
-    public function encryptToken($string, $seed) {
+    public function encryptToken(string $string, string $seed): void {
         $result = '';
-        for($i = 0; $i < strlen($string); $i++) {
+        for ($i = 0; $i < strlen($string); $i++) {
             $char = substr($string, $i, 1);
-            $keychar = substr($seed, ($i % strlen($seed))-1, 1);
+            $keychar = substr($seed, ($i % strlen($seed)) - 1, 1);
             $char = chr(ord($char) + ord($keychar));
             $result .= $char;
         }

@@ -10,8 +10,8 @@
  */
 
 // Requiere dependencias necesarias
-require_once(__DIR__ . '/apiClasses/auth.php');
-require_once(__DIR__ . '/../api_utils.php');
+require_once __DIR__ . '/apiClasses/auth.php';
+require_once __DIR__ . '/../api_utils.php';
 
 // Inicializa utilidades de API
 $api_utils = new ApiUtils();

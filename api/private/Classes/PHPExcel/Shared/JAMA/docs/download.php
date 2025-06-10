@@ -27,7 +27,7 @@ $tarPath = $buildDir.$pkgName."/downloads/".$tarName;
 
 if($_GET['op'] == "download") {  
   
-	require_once('Archive/Tar.php');  
+	require_once 'Archive/Tar.php');  
 	
 	$tar   = new Archive_Tar($tarPath);
 

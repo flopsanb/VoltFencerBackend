@@ -10,8 +10,8 @@
  * @version 1.0
  */
 
-require_once('interfaces/crud.php');
-require_once('../conn.php');
+require_once 'interfaces/crud.php';
+require_once '../conn.php';
 
 class Rol extends Conexion implements crud {
 
