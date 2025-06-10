@@ -104,7 +104,7 @@ class Authorization extends Conexion {
                 }
             }
         }
-
+        error_log("No Authorization header recibido");
         return null;
     }
 
@@ -119,7 +119,6 @@ class Authorization extends Conexion {
             error_log("[❌ TOKEN NO DETECTADO] Headers crudos: " . $headers);
         }
     }
-
 
     public function comprobarToken(): void {
         $this->getBearerToken();
