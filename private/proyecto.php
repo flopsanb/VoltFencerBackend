@@ -85,11 +85,13 @@ if (!$authorization->token_valido) {
     }
 }
 
-$api_utils->response(
+$response = $api_utils->response(
     $proyecto->status,
     $proyecto->message,
     $proyecto->data ?? null,
     $authorization->permises ?? []
 );
-echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+
+echo json_encode($response, JSON_PRETTY_PRINT);
+
 exit;

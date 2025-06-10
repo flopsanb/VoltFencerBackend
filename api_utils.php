@@ -63,12 +63,13 @@ class ApiUtils {
      * @param mixed $data
      * @param mixed $permises
      */
-    public function response(bool $status, string $message, $data = null, $permises = null): void {
+    public function response(bool $status, string $message, $data = null, $permises = null) {
         $this->response = [
             'ok'       => $status,
             'message'  => $message,
             'data'     => $data ?? [],
             'permises' => $permises ?? []
         ];
+        return $this->response;
     }
 }
