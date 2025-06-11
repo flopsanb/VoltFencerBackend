@@ -9,9 +9,21 @@ declare(strict_types=1);
  * - Corrección de deprecated property
  * - Mejoras para evitar problemas con session_start
  * 
+ *  * - Usa .env en local
+ * - Usa getenv() en producción (Railway, Render, etc.)
+ * 
  * @author  Francisco Lopez
  * @version 2.1
  */
+
+// Cargar .env si existe
+$env_path = __DIR__ . '/.env';
+if (file_exists($env_path)) {
+    $env = parse_ini_file($env_path);
+    foreach ($env as $key => $value) {
+        putenv("$key=$value");
+    }
+}
 
 if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', '3600');
@@ -44,13 +56,20 @@ class Conexion {
     }
 
     private function conectar(): void {
-        $this->conexion = new PDO(
-            "mysql:host=" . self::$DB_HOST . ";dbname=" . self::$DB_NAME . ";port=" . self::$DB_PORT,
-            self::$DB_USERNAME,
-            self::$DB_PASSWORD,
-            [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]
-        );
-        $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $this->conexion = new PDO(
+                "mysql:host=" . self::$DB_HOST . ";dbname=" . self::$DB_NAME . ";port=" . self::$DB_PORT,
+                self::$DB_USERNAME,
+                self::$DB_PASSWORD,
+                [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]
+            );
+            $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $e) {
+            error_log("[❌ ERROR DB] " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["ok" => false, "message" => "Error interno del servidor"]);
+            exit;
+        }
     }
 
     private function setVariablesSession(): void {
@@ -124,7 +143,7 @@ class Authorization extends Conexion {
         if (empty($this->token)) {
             error_log("[❌ TOKEN VACÍO EN comprobarToken]");
             $this->token_valido = false;
-            return; // corto la ejecución para no llamar con null
+            return;
         }
 
         $datos = $this->obtenerPermisosDelUsuario($this->token);
@@ -232,13 +251,6 @@ class Authorization extends Conexion {
     }
 
     public function encryptToken(string $string, string $seed): void {
-        $result = '';
-        for ($i = 0; $i < strlen($string); $i++) {
-            $char = substr($string, $i, 1);
-            $keychar = substr($seed, ($i % strlen($seed)) - 1, 1);
-            $char = chr(ord($char) + ord($keychar));
-            $result .= $char;
-        }
-        $this->token_encrypt = base64_encode($result);
+        $this->token_encrypt = hash_hmac('sha256', $string, $seed);
     }
 }

@@ -3,44 +3,51 @@
  * Verificación de token de autenticación
  * 
  * Este script valida el token recibido y devuelve la información del usuario si es válido.
+ * Seguridad reforzada: validación estricta, control de errores y respuesta mínima.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 1.2
+ * @version 2.0
  */
 
 require_once __DIR__ . '/apiClasses/auth.php';
 require_once __DIR__ . '/../api_utils.php';
 
-// Inicializa las utilidades
+// Inicialización de utilidades
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
 
-// Response 200 si es una petición preflight OPTIONS
+// OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit();
+    exit;
 }
 
-// Decodifica el cuerpo de la petición
+// Leer cuerpo de la petición
 $request = json_decode(file_get_contents("php://input"), true);
-$token = $request["token"] ?? null;
+$token = isset($request["token"]) && is_string($request["token"]) ? trim($request["token"]) : null;
 
 $auth = new Auth();
 
 try {
-    if ($token && is_string($token) && trim($token) !== '') {
-        $auth->checkUsuario($token);
-        http_response_code($auth->status ? 200 : 401);
-        $api_utils->response($auth->status, $auth->message, $auth->data);
-    } else {
+    if (!$token) {
         http_response_code(400);
         $api_utils->response(false, "Token no proporcionado o inválido");
+    } else {
+        $auth->checkUsuario($token);
+
+        if ($auth->status) {
+            http_response_code(200);
+            $api_utils->response(true, $auth->message, $auth->data);
+        } else {
+            http_response_code(401);
+            $api_utils->response(false, $auth->message);
+        }
     }
 } catch (Exception $e) {
+    error_log("[❌ ERROR CHECK_TOKEN] " . $e->getMessage());
     http_response_code(500);
-    $api_utils->response(false, "Error al verificar el token", $e->getMessage());
+    $api_utils->response(false, "Error interno al verificar el token");
 }
 
-// Muestra la respuesta
+// Enviar respuesta
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-

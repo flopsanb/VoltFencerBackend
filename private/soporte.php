@@ -4,51 +4,59 @@ declare(strict_types=1);
 /**
  * Endpoint para gestión de tickets de soporte
  * 
- * RESTful endpoint para la creación de tickets de soporte técnico.
- * Solo permite POST y requiere token de autenticación válido.
+ * Solo permite POST autenticado para crear un nuevo ticket.
  * 
  * @author Francisco
- * @version 1.2
+ * @version 1.3
  */
 
 require_once __DIR__ . '/apiClasses/soporte.php';
 require_once __DIR__ . '/../conn.php';
 require_once __DIR__ . '/../api_utils.php';
 
+// Inicializar utilidades
 $api_utils = new ApiUtils();
-$api_utils->setHeaders(ApiUtils::ALL_HEADERS);
+$api_utils->setHeaders(ApiUtils::POST);
 
+// Validar método HTTP
+if ($_SERVER['REQUEST_METHOD'] !== ApiUtils::POST) {
+    http_response_code(405);
+    $api_utils->response(false, 'Método no permitido. Solo se acepta POST');
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    exit;
+}
+
+// Autenticación
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$GLOBALS['authorization'] = $authorization;
-
-// Decodificamos
-$inputRaw = file_get_contents("php://input");
-
-$request = json_decode($inputRaw, true);
-
 $soporte = new Soporte();
 
-if ($authorization->token_valido) {
-    try {
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case ApiUtils::POST:
-                $soporte->crearTicket($request);
-                break;
-            default:
-                $soporte->status = false;
-                $soporte->message = 'Método no soportado';
-        }
-    } catch (Exception $e) {
-        $soporte->status = false;
-        $soporte->message = 'Error inesperado en el endpoint de soporte';
-        $soporte->data = $e->getMessage();
-    }
-} else {
-    $soporte->status = false;
-    $soporte->message = NO_TOKEN_MESSAGE;
+// Validar token
+if (!$authorization->token_valido) {
+    http_response_code(401);
+    $api_utils->response(false, NO_TOKEN_MESSAGE);
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    exit;
 }
 
+// Decodificación del body
+$request = json_decode(file_get_contents("php://input"), true);
+
+try {
+    if (!$request || !is_array($request)) {
+        throw new Exception('Solicitud malformada o vacía');
+    }
+
+    $soporte->crearTicket($request);
+    http_response_code($soporte->status ? 200 : 400);
+} catch (Exception $e) {
+    http_response_code(500);
+    $soporte->status = false;
+    $soporte->message = 'Error inesperado en el endpoint de soporte';
+    $soporte->data = $e->getMessage();
+}
+
+// Respuesta final
 $api_utils->response($soporte->status, $soporte->message, $soporte->data);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

@@ -2,82 +2,93 @@
 declare(strict_types=1);
 
 /**
- * Endpoint para gestión de roles
+ * Endpoint para gestión de roles del sistema
  * 
- * Este script implementa un endpoint RESTful para operaciones CRUD
- * sobre los roles del sistema. Requiere token de autorización válido
- * y permisos específicos para cada operación.
+ * CRUD completo con control de permisos y token obligatorio.
  * 
- * @author  Francisco Lopez
- * @version 1.2
+ * @author Francisco
+ * @version 1.3
  */
 
 require_once __DIR__ . '/apiClasses/rol.php';
 require_once __DIR__ . '/../conn.php';
 require_once __DIR__ . '/../api_utils.php';
 
+// Inicialización
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
-
-
 
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$request = json_decode(file_get_contents("php://input"), true);
-
 $rol = new Rol();
 $id = $_GET["id"] ?? null;
+$request = json_decode(file_get_contents("php://input"), true);
 
-if ($authorization->token_valido) {
-    try {
-        switch ($_SERVER['REQUEST_METHOD']) {
+if (!$authorization->token_valido) {
+    http_response_code(401);
+    $api_utils->response(false, NO_TOKEN_MESSAGE);
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    exit;
+}
 
-            case ApiUtils::GET:
-                $rol->get();
-                $authorization->getPermision(Rol::ROUTE);
-                break;
+try {
+    $method = $_SERVER['REQUEST_METHOD'];
 
-            case ApiUtils::POST:
-                $authorization->havePermision(ApiUtils::POST, Rol::ROUTE);
-                if ($authorization->have_permision) {
-                    $rol->create($request);
-                } else {
-                    $rol->message = ADD_ROL_NOT_PERMISION;
-                }
-                break;
+    switch ($method) {
+        case ApiUtils::GET:
+            $rol->get();
+            $authorization->getPermision(Rol::ROUTE);
+            http_response_code(200);
+            break;
 
-            case ApiUtils::PUT:
-                $authorization->havePermision(ApiUtils::PUT, Rol::ROUTE);
-                if ($authorization->have_permision) {
-                    $rol->update($request);
-                } else {
-                    $rol->message = EDIT_ROL_NOT_PERMISION;
-                }
-                break;
+        case ApiUtils::POST:
+            $authorization->havePermision(ApiUtils::POST, Rol::ROUTE);
+            if ($authorization->have_permision) {
+                $rol->create($request);
+                http_response_code($rol->status ? 200 : 400);
+            } else {
+                http_response_code(403);
+                $rol->status = false;
+                $rol->message = ADD_ROL_NOT_PERMISION;
+            }
+            break;
 
-            case ApiUtils::DELETE:
-                $authorization->havePermision(ApiUtils::DELETE, Rol::ROUTE);
-                if ($authorization->have_permision) {
-                    $rol->delete($id);
-                } else {
-                    $rol->message = DELETE_ROL_NOT_PERMISION;
-                }
-                break;
+        case ApiUtils::PUT:
+            $authorization->havePermision(ApiUtils::PUT, Rol::ROUTE);
+            if ($authorization->have_permision) {
+                $rol->update($request);
+                http_response_code($rol->status ? 200 : 400);
+            } else {
+                http_response_code(403);
+                $rol->status = false;
+                $rol->message = EDIT_ROL_NOT_PERMISION;
+            }
+            break;
 
-            default:
-                $rol->message = "Método no soportado";
-                break;
-        }
-    } catch (Exception $e) {
-        $rol->status = false;
-        $rol->message = "Error inesperado en el endpoint de rol";
-        $rol->data = $e->getMessage();
+        case ApiUtils::DELETE:
+            $authorization->havePermision(ApiUtils::DELETE, Rol::ROUTE);
+            if ($authorization->have_permision) {
+                $rol->delete($id);
+                http_response_code($rol->status ? 200 : 400);
+            } else {
+                http_response_code(403);
+                $rol->status = false;
+                $rol->message = DELETE_ROL_NOT_PERMISION;
+            }
+            break;
+
+        default:
+            http_response_code(405);
+            $rol->status = false;
+            $rol->message = 'Método HTTP no soportado';
     }
 
-} else {
+} catch (Exception $e) {
+    http_response_code(500);
     $rol->status = false;
-    $rol->message = NO_TOKEN_MESSAGE;
+    $rol->message = 'Error inesperado en el endpoint de rol';
+    $rol->data = $e->getMessage();
 }
 
 $api_utils->response($rol->status, $rol->message, $rol->data, $authorization->permises);

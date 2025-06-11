@@ -113,6 +113,26 @@ class PermisosRol extends Conexion implements crud {
         }
         $this->closeConnection();
     }
+
+    public function getById(int $id): void {
+    try {
+        $stmt = $this->conexion->prepare("SELECT * FROM permisos_rol WHERE id_rol = :id");
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->status = true;
+        $this->data = $result;
+        $this->message = count($result) > 0 ? 'Permisos cargados correctamente.' : 'El rol no tiene permisos asignados.';
+    } catch (PDOException $e) {
+        $this->status = false;
+        $this->message = 'Error al obtener permisos';
+        $this->data = $e->getMessage();
+    }
+
+    $this->closeConnection();
+}
+
 }
 
 ?>
