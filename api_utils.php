@@ -31,7 +31,7 @@ class ApiUtils {
      * Establece los headers necesarios para la API.
      */
     public function setHeaders($method) {
-        header("Access-Control-Allow-Origin: https://volt.onrender.com");
+        header("Access-Control-Allow-Origin: https://voltfencerfrontend.onrender.com");
         header("Access-Control-Allow-Credentials: true");
         header("Access-Control-Max-Age: 1000");
         header("Access-Control-Allow-Headers: X-Requested-With, Content-Type, Origin, Cache-Control, Pragma, Authorization, Accept, Accept-Encoding");
