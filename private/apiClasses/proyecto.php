@@ -1,14 +1,10 @@
 <?php
 /**
  * Clase para gestión de proyectos
+ * CRUD con control de acceso por rol
  * 
- * CRUD de proyectos con control de acceso por rol:
- * - Admin global: accede y gestiona todo
- * - Admin empresa: solo su empresa, sin poder deshabilitar
- * - Empleado: solo ve visibles y habilitados de su empresa
- * 
- * @author Francisco Lopez Sanchez
- * @version 1.2
+ * @author Francisco Lopez
+ * @version 1.3
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -27,13 +23,17 @@ class Proyecto extends Conexion implements crud {
     public function __construct($auth) {
         parent::__construct();
         $this->auth = $auth;
+        error_log("[🔧 PROYECTO] Constructor lanzado");
     }
 
     public function get() {
+        error_log("[📥 PROYECTO::get] Inicio");
         try {
             $permises = $this->auth->permises;
             $id_rol = $permises['id_rol'] ?? null;
             $id_empresa = $permises['id_empresa'] ?? null;
+
+            error_log("[👤 Permisos] id_rol: $id_rol | id_empresa: $id_empresa");
 
             $sqlBase = "SELECT p.*, e.nombre_empresa 
                         FROM proyectos p
@@ -56,15 +56,19 @@ class Proyecto extends Conexion implements crud {
             $sql->execute();
             $this->data = $sql->fetchAll(PDO::FETCH_ASSOC);
             $this->status = true;
+            error_log("[✅ PROYECTO::get] Proyectos obtenidos");
 
         } catch (PDOException $e) {
             $this->message = 'Error al obtener proyectos: ' . $e->getMessage();
+            error_log("[🔥 ERROR::get] " . $e->getMessage());
         }
 
         $this->closeConnection();
     }
 
     public function create($data) {
+        error_log("[📥 PROYECTO::create] Inicio");
+        error_log("[🧾 Data] " . json_encode($data));
         try {
             $sql = $this->conexion->prepare("
                 INSERT INTO proyectos (nombre_proyecto, id_empresa, iframe_proyecto, visible, habilitado)
@@ -81,21 +85,26 @@ class Proyecto extends Conexion implements crud {
 
             $this->status = true;
             $this->message = 'Proyecto creado correctamente';
+            error_log("[✅ PROYECTO::create] Éxito");
 
         } catch (PDOException $e) {
             $this->message = 'Error al crear proyecto: ' . $e->getMessage();
+            error_log("[🔥 ERROR::create] " . $e->getMessage());
         }
 
         $this->closeConnection();
     }
 
     public function update($data) {
+        error_log("[📥 PROYECTO::update] Inicio");
+        error_log("[🧾 Data] " . json_encode($data));
         try {
             $permises = $this->auth->permises;
             $id_rol = $permises['id_rol'] ?? null;
             $id_empresa_user = $permises['id_empresa'] ?? null;
 
-            // Si no es superadmin ni admin, comprobar propiedad
+            error_log("[👤 Permisos] id_rol: $id_rol | id_empresa: $id_empresa_user");
+
             if (!in_array($id_rol, [1, 2])) {
                 $sqlCheck = $this->conexion->prepare("SELECT id_empresa FROM proyectos WHERE id_proyecto = :id_proyecto");
                 $sqlCheck->bindParam(':id_proyecto', $data['id_proyecto'], PDO::PARAM_INT);
@@ -105,12 +114,13 @@ class Proyecto extends Conexion implements crud {
                 if (!$proyecto || $proyecto['id_empresa'] != $id_empresa_user) {
                     $this->status = false;
                     $this->message = 'No puedes editar proyectos que no son de tu empresa.';
+                    error_log("[⛔ PROYECTO::update] Proyecto no pertenece a empresa del usuario");
                     return;
                 }
 
-                // Admin empresa no puede modificar habilitado
                 if ($id_rol == 3) {
                     $data['habilitado'] = 1;
+                    error_log("[🔒 PROYECTO::update] Habilitado forzado a 1 para admin empresa");
                 }
             }
 
@@ -135,15 +145,18 @@ class Proyecto extends Conexion implements crud {
 
             $this->status = true;
             $this->message = 'Proyecto actualizado correctamente';
+            error_log("[✅ PROYECTO::update] Éxito");
 
         } catch (PDOException $e) {
             $this->message = 'Error al actualizar proyecto: ' . $e->getMessage();
+            error_log("[🔥 ERROR::update] " . $e->getMessage());
         }
 
         $this->closeConnection();
     }
 
     public function delete($id) {
+        error_log("[🗑️ PROYECTO::delete] ID: $id");
         try {
             $permises = $this->auth->permises;
             $id_rol = $permises['id_rol'] ?? null;
@@ -158,6 +171,7 @@ class Proyecto extends Conexion implements crud {
                 if (!$proyecto || $proyecto['id_empresa'] != $id_empresa_user) {
                     $this->status = false;
                     $this->message = 'No puedes eliminar proyectos que no son de tu empresa.';
+                    error_log("[⛔ PROYECTO::delete] Proyecto no pertenece a empresa del usuario");
                     return;
                 }
             }
@@ -168,9 +182,11 @@ class Proyecto extends Conexion implements crud {
 
             $this->status = true;
             $this->message = 'Proyecto eliminado correctamente';
+            error_log("[✅ PROYECTO::delete] Proyecto eliminado");
 
         } catch (PDOException $e) {
             $this->message = 'Error al eliminar proyecto: ' . $e->getMessage();
+            error_log("[🔥 ERROR::delete] " . $e->getMessage());
         }
 
         $this->closeConnection();
