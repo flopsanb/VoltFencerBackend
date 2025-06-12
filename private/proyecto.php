@@ -6,7 +6,7 @@ declare(strict_types=1);
  * CRUD RESTful con validación de token y permisos
  * 
  * @author  Francisco Lopez
- * @version 1.3
+ * @version 1.4
  */
 
 require_once __DIR__ . '/apiClasses/proyecto.php';
@@ -36,12 +36,20 @@ try {
 
     switch ($method) {
         case ApiUtils::GET:
-            $proyecto->get();
-            http_response_code(200);
+            $authorization->havePermision(ApiUtils::GET, Proyecto::ROUTE);
+            if ($authorization->have_permision) {
+                $proyecto->get();
+                http_response_code(200);
+            } else {
+                http_response_code(403);
+                $proyecto->status = false;
+                $proyecto->message = 'No tienes permiso para ver proyectos.';
+            }
             break;
 
         case ApiUtils::POST:
-            if ((int)($permises['crear_proyectos'] ?? 0) === 1) {
+            $authorization->havePermision(ApiUtils::POST, Proyecto::ROUTE);
+            if ($authorization->have_permision) {
                 $proyecto->create($request);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
@@ -52,8 +60,8 @@ try {
             break;
 
         case ApiUtils::PUT:
-            if ((int)($permises['gestionar_usuarios_empresa'] ?? 0) === 1 ||
-                (int)($permises['gestionar_usuarios_globales'] ?? 0) === 1) {
+            $authorization->havePermision(ApiUtils::PUT, Proyecto::ROUTE);
+            if ($authorization->have_permision) {
                 $proyecto->update($request);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
@@ -64,7 +72,8 @@ try {
             break;
 
         case ApiUtils::DELETE:
-            if ((int)($permises['borrar_proyectos'] ?? 0) === 1) {
+            $authorization->havePermision(ApiUtils::DELETE, Proyecto::ROUTE);
+            if ($authorization->have_permision) {
                 $proyecto->delete($id);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {

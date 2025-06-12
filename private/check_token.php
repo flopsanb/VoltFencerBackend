@@ -44,7 +44,6 @@ try {
         }
     }
 } catch (Exception $e) {
-    error_log("[❌ ERROR CHECK_TOKEN] " . $e->getMessage());
     http_response_code(500);
     $api_utils->response(false, "Error interno al verificar el token");
 }

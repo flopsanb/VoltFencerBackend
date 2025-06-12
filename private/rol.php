@@ -7,7 +7,7 @@ declare(strict_types=1);
  * CRUD completo con control de permisos y token obligatorio.
  * 
  * @author Francisco
- * @version 1.3
+ * @version 1.4
  */
 
 require_once __DIR__ . '/apiClasses/rol.php';
@@ -37,9 +37,15 @@ try {
 
     switch ($method) {
         case ApiUtils::GET:
-            $rol->get();
-            $authorization->getPermision(Rol::ROUTE);
-            http_response_code(200);
+            $authorization->havePermision(ApiUtils::GET, Rol::ROUTE);
+            if ($authorization->have_permision) {
+                $rol->get();
+                http_response_code(200);
+            } else {
+                http_response_code(403);
+                $rol->status = false;
+                $rol->message = 'No tienes permiso para ver los roles.';
+            }
             break;
 
         case ApiUtils::POST:

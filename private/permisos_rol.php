@@ -8,7 +8,7 @@ declare(strict_types=1);
  * sobre los permisos asignados a los diferentes roles del sistema.
  * 
  * @author  Francisco Lopez
- * @version 1.3
+ * @version 1.4
  */
 
 require_once __DIR__ . '/apiClasses/permisos_rol.php';
@@ -27,26 +27,27 @@ $id = $_GET['id'] ?? null;
 $permiso = new PermisosRol();
 
 if (!$authorization->token_valido) {
+    http_response_code(401);
     $permiso->status = false;
     $permiso->message = NO_TOKEN_MESSAGE;
 } else {
     try {
         switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::GET:
-                // Solo permitir si se pasa ID y el usuario tiene derecho a verlo
-                if ($id && ctype_digit($id)) {
-                    if (
-                        (int)$id === (int)$authorization->usuario['id_rol'] || 
-                        ($authorization->permises['gestionar_usuarios_globales'] ?? 0) === 1
-                    ) {
+                $authorization->havePermision(ApiUtils::GET, PermisosRol::ROUTE);
+                if ($authorization->have_permision) {
+                    if ($id && ctype_digit($id)) {
                         $permiso->getById((int)$id);
+                        http_response_code($permiso->status ? 200 : 400);
                     } else {
+                        http_response_code(400);
                         $permiso->status = false;
-                        $permiso->message = 'No tienes permiso para ver estos permisos.';
+                        $permiso->message = 'ID no proporcionado o inválido.';
                     }
                 } else {
+                    http_response_code(403);
                     $permiso->status = false;
-                    $permiso->message = 'ID no proporcionado o inválido.';
+                    $permiso->message = 'No tienes permiso para ver estos permisos.';
                 }
                 break;
 
@@ -54,7 +55,10 @@ if (!$authorization->token_valido) {
                 $authorization->havePermision(ApiUtils::POST, PermisosRol::ROUTE);
                 if ($authorization->have_permision) {
                     $permiso->create($request);
+                    http_response_code($permiso->status ? 200 : 400);
                 } else {
+                    http_response_code(403);
+                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para crear permisos';
                 }
                 break;
@@ -63,7 +67,10 @@ if (!$authorization->token_valido) {
                 $authorization->havePermision(ApiUtils::PUT, PermisosRol::ROUTE);
                 if ($authorization->have_permision) {
                     $permiso->update($request);
+                    http_response_code($permiso->status ? 200 : 400);
                 } else {
+                    http_response_code(403);
+                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para actualizar permisos';
                 }
                 break;
@@ -72,18 +79,23 @@ if (!$authorization->token_valido) {
                 $authorization->havePermision(ApiUtils::DELETE, PermisosRol::ROUTE);
                 if ($authorization->have_permision) {
                     $permiso->delete($id);
+                    http_response_code($permiso->status ? 200 : 400);
                 } else {
+                    http_response_code(403);
+                    $permiso->status = false;
                     $permiso->message = 'No tienes permiso para eliminar permisos';
                 }
                 break;
 
             default:
+                http_response_code(405);
                 $permiso->status = false;
                 $permiso->message = 'Método no soportado';
                 break;
         }
 
     } catch (Exception $e) {
+        http_response_code(500);
         $permiso->status = false;
         $permiso->message = 'Error inesperado en el endpoint de permisos_rol';
         $permiso->data = $e->getMessage();

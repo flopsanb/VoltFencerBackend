@@ -21,6 +21,7 @@ $empresa = new Empresa();
 $id_empresa_usuario = $authorization->permises['id_empresa'] ?? null;
 
 if (!$authorization->token_valido || !$id_empresa_usuario) {
+    http_response_code(401);
     $empresa->status = false;
     $empresa->message = NO_TOKEN_MESSAGE;
 } else {
@@ -30,7 +31,9 @@ if (!$authorization->token_valido || !$id_empresa_usuario) {
                 $authorization->havePermision(ApiUtils::GET, 'mi_empresa');
                 if ($authorization->have_permision) {
                     $empresa->getById((int)$id_empresa_usuario);
+                    http_response_code($empresa->status ? 200 : 400);
                 } else {
+                    http_response_code(403);
                     $empresa->status = false;
                     $empresa->message = 'No tienes permiso para ver tu empresa';
                 }
@@ -41,17 +44,21 @@ if (!$authorization->token_valido || !$id_empresa_usuario) {
                 if ($authorization->have_permision) {
                     $request['id_empresa'] = (int)$id_empresa_usuario;
                     $empresa->update($request);
+                    http_response_code($empresa->status ? 200 : 400);
                 } else {
+                    http_response_code(403);
                     $empresa->status = false;
                     $empresa->message = 'No tienes permiso para modificar tu empresa';
                 }
                 break;
 
             default:
+                http_response_code(405);
                 $empresa->status = false;
                 $empresa->message = 'Método no soportado';
         }
     } catch (Exception $e) {
+        http_response_code(500);
         $empresa->status = false;
         $empresa->message = 'Error inesperado';
         $empresa->data = $e->getMessage();

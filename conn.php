@@ -91,7 +91,6 @@ class Authorization extends Conexion {
     public $id_usuario = null;
     public $token_valido = false;
     public $token = null;
-    public $token_encrypt;
     public $is_admin = false;
     public $permises = null;
     public $have_permision = false;
@@ -103,24 +102,14 @@ class Authorization extends Conexion {
     }
 
     private function getAuthorizationHeader(): ?string {
-        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            return trim($_SERVER["HTTP_AUTHORIZATION"]);
-        }
-
-        if (isset($_SERVER['Authorization'])) {
-            return trim($_SERVER["Authorization"]);
-        }
-
-        if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            return trim($_SERVER["REDIRECT_HTTP_AUTHORIZATION"]);
-        }
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) return trim($_SERVER["HTTP_AUTHORIZATION"]);
+        if (isset($_SERVER['Authorization'])) return trim($_SERVER["Authorization"]);
+        if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) return trim($_SERVER["REDIRECT_HTTP_AUTHORIZATION"]);
 
         if (function_exists('apache_request_headers')) {
             $headers = apache_request_headers();
             foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'authorization') {
-                    return trim($value);
-                }
+                if (strtolower($key) === 'authorization') return trim($value);
             }
         }
         return null;
@@ -128,12 +117,8 @@ class Authorization extends Conexion {
 
     private function getBearerToken(): void {
         $header = $this->getAuthorizationHeader();
-        error_log("[🧠 HEADER COMPLETO] " . var_export($header, true));
         if (!empty($header) && preg_match('/Bearer\s(\S+)/', $header, $matches)) {
             $this->token = $matches[1];
-            error_log("[✅ TOKEN EXTRAIDO] " . $this->token);
-        } else {
-            error_log("[❌ TOKEN NO DETECTADO EN HEADER]");
         }
     }
 
@@ -141,7 +126,6 @@ class Authorization extends Conexion {
         $this->getBearerToken();
 
         if (empty($this->token)) {
-            error_log("[❌ TOKEN VACÍO EN comprobarToken]");
             $this->token_valido = false;
             return;
         }
@@ -160,7 +144,7 @@ class Authorization extends Conexion {
                 "id_empresa"     => $datos["id_empresa"]
             ];
             $this->id_rol = $datos["id_rol"];
-            $this->is_admin = ($this->id_rol === '1' || $this->id_rol === 1);
+            $this->is_admin = ($this->id_rol == 1);
         } else {
             $this->token_valido = false;
         }
@@ -180,77 +164,44 @@ class Authorization extends Conexion {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function getIdRol() {
-        $sql = $this->conexion->prepare("SELECT id_rol FROM usuarios WHERE token_sesion = :token");
-        $sql->bindParam(":token", $this->token);
-        $sql->execute();
-        $this->id_rol = $sql->fetch(PDO::FETCH_ASSOC)["id_rol"];
-    }
-    
-    public function isAdmin() {
-        $this->getIdRol();
-        $this->is_admin = ($this->id_rol === '1');
-    }
-
     public function havePermision(string $method, string $route): void {
-        $this->isAdmin();
-        $api_utils = new ApiUtils();
+        $this->have_permision = false;
 
         if ($this->is_admin) {
             $this->have_permision = true;
             return;
         }
 
-        $map = [
-            'usuarios' => [
-                'POST'   => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
-                'PUT'    => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
-                'DELETE' => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa'],
-                'GET'    => ['gestionar_usuarios_globales', 'gestionar_usuarios_empresa']
-            ],
-            'empresas' => [
-                'POST'   => ['crear_empresas'],
-                'PUT'    => ['crear_empresas'],
-                'DELETE' => ['crear_empresas'],
-                'GET'    => ['crear_empresas']
-            ],
-            'proyectos' => [
-                'POST'   => ['crear_proyectos'],
-                'PUT'    => ['crear_proyectos'],
-                'DELETE' => ['borrar_proyectos'],
-                'GET'    => ['crear_proyectos']
-            ],
-            'mi_empresa' => [
-                'GET' => ['ver_usuarios_empresa'],
-                'PUT' => ['gestionar_usuarios_empresa']
-            ]
+        $acciones = [
+            'POST'   => 'crear',
+            'PUT'    => 'gestionar',
+            'DELETE' => 'borrar',
+            'GET'    => 'ver'
         ];
 
-        $method = strtoupper($method);
-        $permisos_necesarios = $map[$route][$method] ?? [];
+        $ruta = [
+            'mi_empresa'   => 'mi_empresa',            
+            'empresas'     => 'empresas',
+            'usuarios'     => 'usuarios',
+            'roles-menu'   => 'permisos_globales',
+            'permisos-rol' => 'permisos_globales',
+            'proyectos'    => 'proyectos',
+            'logs'         => 'logs_empresa'
+        ];
 
-        foreach ($permisos_necesarios as $permiso) {
-            if (!empty($this->permises[$permiso])) {
-                $this->have_permision = true;
-                break;
-            }
+        $accion = $acciones[strtoupper($method)] ?? null;
+        $ruta = $ruta[$route] ?? $route;
+
+        if (!$accion || !$ruta) return;
+
+        $campo = "{$accion}_{$ruta}";
+
+        if (isset($this->permises[$campo]) && $this->permises[$campo] == 1) {
+            $this->have_permision = true;
         }
     }
 
     public function havePermissionByTipo(string $tipo_permiso): bool {
         return isset($this->permises[$tipo_permiso]) && $this->permises[$tipo_permiso] == 1;
-    }
-
-    public function getPermision(string $route): void {
-        $this->isAdmin();
-        $this->permises = [
-            "add" => $this->is_admin,
-            "edit" => $this->is_admin,
-            "delete" => $this->is_admin
-        ];
-    }
-
-    public function encryptToken(string $string, string $seed): void {
-        $this->token_encrypt = hash_hmac('sha256', $string, $seed);
     }
 }

@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Endpoint RESTful para gestión de usuarios (CRUD)
+ * Control de permisos refinado y validaciones adicionales
+ * 
+ * @author Francisco
+ * @version 1.5
  */
 
 require_once __DIR__ . '/../conn.php';
@@ -27,29 +32,28 @@ if (!$authorization->token_valido) {
 }
 
 try {
-    $permisos         = $authorization->permises;
-    $rol_usuario      = $authorization->usuario['rol'] ?? '';
+    $method           = $_SERVER['REQUEST_METHOD'];
+    $id_rol_token     = $authorization->usuario['id_rol'] ?? null;
     $id_empresa_token = $authorization->usuario['id_empresa'] ?? null;
 
-    switch ($_SERVER['REQUEST_METHOD']) {
+    // Verificación de permisos antes de procesar
+    $authorization->havePermision($method, Usuario::ROUTE);
+
+    switch ($method) {
         case ApiUtils::GET:
-            if (
-                ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
-                ($permisos['ver_usuarios_empresa'] ?? 0) === 1
-            ) {
+            if ($authorization->have_permision) {
                 $usuario->get();
+                http_response_code(200);
             } else {
-                $usuario->status  = false;
-                $usuario->message = 'No tienes permisos para ver los usuarios';
+                http_response_code(403);
+                $usuario->status = false;
+                $usuario->message = VIEW_USER_NOT_PERMISION;
             }
             break;
 
         case ApiUtils::POST:
-            if (
-                ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
-                ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
-            ) {
-                if ($rol_usuario === 'admin_empresa') {
+            if ($authorization->have_permision) {
+                if ((int)$id_rol_token === 3) {
                     if (!isset($request['id_empresa']) || $request['id_empresa'] != $id_empresa_token) {
                         $usuario->status = false;
                         $usuario->message = 'No puedes crear usuarios fuera de tu empresa';
@@ -62,7 +66,9 @@ try {
                     }
                 }
                 $usuario->create($request);
+                http_response_code($usuario->status ? 200 : 400);
             } else {
+                http_response_code(403);
                 $usuario->status = false;
                 $usuario->message = ADD_USER_NOT_PERMISION;
             }
@@ -71,14 +77,12 @@ try {
         case ApiUtils::PUT:
             if ($route === Usuario::ROUTE_PROFILE) {
                 $usuario->updateProfile($request, $authorization->token);
+                http_response_code(200);
                 break;
             }
 
-            if (
-                ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
-                ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
-            ) {
-                if ($rol_usuario === 'admin_empresa') {
+            if ($authorization->have_permision) {
+                if ((int)$id_rol_token === 3) {
                     if (!isset($request['id_empresa']) || $request['id_empresa'] != $id_empresa_token) {
                         $usuario->status = false;
                         $usuario->message = 'No puedes editar usuarios fuera de tu empresa';
@@ -86,24 +90,25 @@ try {
                     }
                     if (!isset($request['id_rol']) || !in_array((int)$request['id_rol'], [3, 4])) {
                         $usuario->status = false;
-                        $usuario->message = 'No puedes cambiar a un rol superior al tuyo';
+                        $usuario->message = 'No puedes asignar un rol superior al tuyo';
                         break;
                     }
                 }
                 $usuario->update($request);
+                http_response_code($usuario->status ? 200 : 400);
             } else {
+                http_response_code(403);
                 $usuario->status = false;
                 $usuario->message = EDIT_USER_NOT_PERMISION;
             }
             break;
 
         case ApiUtils::DELETE:
-            if (
-                ($permisos['gestionar_usuarios_globales'] ?? 0) === 1 ||
-                ($permisos['gestionar_usuarios_empresa'] ?? 0) === 1
-            ) {
+            if ($authorization->have_permision) {
                 $usuario->delete($id);
+                http_response_code($usuario->status ? 200 : 400);
             } else {
+                http_response_code(403);
                 $usuario->status = false;
                 $usuario->message = DELETE_USER_NOT_PERMISION;
             }
@@ -119,10 +124,9 @@ try {
     http_response_code(500);
     $usuario->status = false;
     $usuario->message = 'Error interno en la gestión de usuarios';
-    $usuario->data = null; // No mostrar trazas
+    $usuario->data = null;
 }
 
-// Respuesta final
 $api_utils->response(
     $usuario->status,
     $usuario->message,

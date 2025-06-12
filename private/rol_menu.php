@@ -6,7 +6,7 @@ declare(strict_types=1);
  * CRUD completo con control de token y permisos
  * 
  * @author Francisco
- * @version 1.3
+ * @version 1.4
  */
 
 require_once __DIR__ . '/apiClasses/rol_menu.php';
@@ -36,9 +36,15 @@ try {
 
     switch ($method) {
         case ApiUtils::GET:
-            $rol_menu->get();
-            $authorization->getPermision(RolMenu::ROUTE);
-            http_response_code(200);
+            $authorization->havePermision(ApiUtils::GET, RolMenu::ROUTE);
+            if ($authorization->have_permision) {
+                $rol_menu->get();
+                http_response_code(200);
+            } else {
+                http_response_code(403);
+                $rol_menu->status = false;
+                $rol_menu->message = 'No tienes permiso para ver los menús de rol.';
+            }
             break;
 
         case ApiUtils::POST:
