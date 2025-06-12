@@ -35,8 +35,8 @@ class Auth extends Conexion  {
         if ($this->datos_usuarios && $this->datos_usuarios["usuario"] === $user) {
             if ((int)$this->datos_usuarios["habilitado"] === 1) {
                 try {
-                    // 🔐 Nuevo token fuerte con random_bytes
-                    $token = bin2hex(random_bytes(32)); // 64 caracteres, puro arte
+                    // 🔐 Token fuerte con random_bytes
+                    $token = bin2hex(random_bytes(32)); // 64 caracteres
 
                     // 🧠 Guardamos el token
                     $sql = $this->conexion->prepare("
@@ -81,11 +81,11 @@ class Auth extends Conexion  {
 
         try {
             $sql = $this->conexion->prepare("
-                SELECT u.*, r.nombre_rol 
-                FROM usuarios u 
-                INNER JOIN roles r ON u.id_rol = r.id_rol 
-                WHERE u.usuario = :user AND u.pass_user = :pass
+                SELECT *
+                FROM usuarios
+                WHERE usuario = :user AND pass_user = :pass
             ");
+
             $sql->bindParam(":user", $user);
             $sql->bindParam(":pass", $password_hashed);
             $sql->execute();

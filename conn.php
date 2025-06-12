@@ -65,7 +65,6 @@ class Conexion {
             );
             $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
-            error_log("[❌ ERROR DB] " . $e->getMessage());
             http_response_code(500);
             echo json_encode(["ok" => false, "message" => "Error interno del servidor"]);
             exit;
@@ -189,7 +188,7 @@ class Authorization extends Conexion {
             'logs'         => 'logs_empresa'
         ];
 
-        $accion = $acciones[strtoupper($method)] ?? null;
+        $accion = $acciones[$method] ?? null;
         $ruta = $ruta[$route] ?? $route;
 
         if (!$accion || !$ruta) return;
@@ -199,9 +198,5 @@ class Authorization extends Conexion {
         if (isset($this->permises[$campo]) && $this->permises[$campo] == 1) {
             $this->have_permision = true;
         }
-    }
-
-    public function havePermissionByTipo(string $tipo_permiso): bool {
-        return isset($this->permises[$tipo_permiso]) && $this->permises[$tipo_permiso] == 1;
     }
 }
