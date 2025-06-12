@@ -1,10 +1,10 @@
 <?php
 /**
  * Clase para gestión de tickets de soporte
- * Envía tickets por email mediante PHPMailer.
+ * Envía tickets por email mediante PHPMailer usando variables de entorno con getenv().
  * 
  * @author Francisco
- * @version 1.2
+ * @version 1.3
  */
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -25,9 +25,9 @@ class Soporte {
 
     public function crearTicket($request) {
         try {
-            $titulo = $request['asunto'] ?? null;
+            $titulo  = $request['asunto']  ?? null;
             $mensaje = $request['mensaje'] ?? null;
-            $email   = $request['email'] ?? null;
+            $email   = $request['email']   ?? null;
 
             if (!$titulo || !$mensaje) {
                 $this->message = 'Faltan campos obligatorios: título o mensaje';
@@ -37,21 +37,21 @@ class Soporte {
             $usuario = $this->auth->usuario;
 
             $mail = new PHPMailer(true);
-            $mail->SMTPDebug = 2;
+            $mail->SMTPDebug  = 2;
             $mail->Debugoutput = 'error_log';
             $mail->isSMTP();
-            $mail->Host = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $_ENV['MAIL_USERNAME'];
-            $mail->Password = $_ENV['MAIL_PASSWORD'];
+            $mail->Host       = getenv('MAIL_HOST');
+            $mail->SMTPAuth   = true;
+            $mail->Username   = getenv('MAIL_USERNAME');
+            $mail->Password   = getenv('MAIL_PASSWORD');
             $mail->SMTPSecure = 'tls';
-            $mail->Port = $_ENV['MAIL_PORT'];
+            $mail->Port       = getenv('MAIL_PORT');
 
-            $mail->CharSet = 'UTF-8';
+            $mail->CharSet  = 'UTF-8';
             $mail->Encoding = 'base64';
 
-            $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
-            $mail->addAddress($_ENV['MAIL_TO'], $_ENV['MAIL_TO_NAME']);
+            $mail->setFrom(getenv('MAIL_FROM'), getenv('MAIL_FROM_NAME'));
+            $mail->addAddress(getenv('MAIL_TO'), getenv('MAIL_TO_NAME'));
 
             $mail->isHTML(true);
             $mail->Subject = "🎫 Nuevo Ticket de Soporte: $titulo";
@@ -69,7 +69,8 @@ class Soporte {
                 <h3 style='color:#cc0000;'>📝 Título:</h3>
                 <p>$titulo</p>
                 <h3>📋 Mensaje:</h3>
-                <div style='padding:10px; border-left:3px solid #ccc; background:#f9f9f9; white-space:pre-line;'>".htmlspecialchars($mensaje)."</div>
+                <div style='padding:10px; border-left:3px solid #ccc; background:#f9f9f9; white-space:pre-line;'>"
+                . htmlspecialchars($mensaje) . "</div>
                 <br>
                 <p style='font-size:12px; color:#999;'>Sistema automático de soporte VoltFencer.</p>
             ";
