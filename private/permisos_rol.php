@@ -24,7 +24,7 @@ $authorization->comprobarToken();
 $request = json_decode(file_get_contents("php://input"), true);
 $id = $_GET['id'] ?? null;
 
-$permiso = new PermisosRol();
+$permiso = new PermisosRol($authorization);
 
 if (!$authorization->token_valido) {
     http_response_code(401);

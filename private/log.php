@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] !== ApiUtils::GET) {
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$log = new Log();
+$log = new Log($authorization);
 
 if (!$authorization->token_valido) {
     http_response_code(401);
@@ -49,7 +49,7 @@ if (!$authorization->have_permision) {
 }
 
 try {
-    $log->get();  // El filtro por empresa o global ya se gestiona dentro de Log::get()
+    $log->get();
     http_response_code(200);
 } catch (Throwable $e) {
     http_response_code(500);

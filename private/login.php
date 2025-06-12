@@ -66,7 +66,6 @@ try {
     $api_utils->response($auth->status, $auth->message, $auth->data, null);
 
 } catch (Throwable $e) {
-    error_log('[❌ ERROR LOGIN] ' . $e->getMessage());
     http_response_code(500);
     $api_utils->response(false, 'Error interno en el login');
 }

@@ -75,7 +75,6 @@ try {
     $api_utils->response(true, 'Logout completado correctamente');
 
 } catch (Throwable $e) {
-    error_log("[❌ ERROR LOGOUT] " . $e->getMessage());
     http_response_code(500);
     $api_utils->response(false, 'Error interno al cerrar sesión');
 }

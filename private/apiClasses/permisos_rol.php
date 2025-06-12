@@ -18,10 +18,13 @@ class PermisosRol extends Conexion implements crud {
     public $status = false;
     public $message = NULL;
     public $data = NULL;
+    private $auth;
+
     const ROUTE = 'permisos-rol';
 
-    function __construct (){
+    function __construct ($auth){
         parent::__construct();
+        $this->auth = $auth;
     }
 
     public function get() {

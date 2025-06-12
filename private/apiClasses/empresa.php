@@ -2,11 +2,10 @@
 /**
  * Clase para gestión de empresas
  * 
- * Implementa operaciones CRUD para entidades de tipo Empresa.
- * Aplica restricciones basadas en los permisos del usuario autenticado.
+ * CRUD con control de permisos en base al usuario autenticado.
  * 
  * @author Francisco
- * @version 1.3
+ * @version 1.5
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -17,25 +16,26 @@ class Empresa extends Conexion implements crud {
     public $status = false;
     public $message = null;
     public $data = null;
+
+    private $auth; // Instancia de Authorization
+
     const ROUTE = 'empresas';
 
-    private $permisos;
-
-    public function __construct(array $permisos = []) {
+    public function __construct($auth) {
         parent::__construct();
-        $this->permisos = $permisos;
+        $this->auth = $auth;
     }
 
     /**
-     * Devuelve todas las empresas (o solo la suya si es admin_empresa o empleado)
+     * Devuelve todas las empresas o solo la propia si es rol limitado
      */
     public function get() {
         try {
-            $id_rol = $this->permisos['id_rol'] ?? null;
-            $id_empresa = $this->permisos['id_empresa'] ?? null;
+            $id_rol = $this->auth->permises['id_rol'] ?? null;
+            $id_empresa = $this->auth->permises['id_empresa'] ?? null;
 
             $query = "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas";
-            
+
             if (in_array($id_rol, [3, 4])) {
                 $query .= " WHERE id_empresa = :id_empresa";
             }
@@ -65,7 +65,11 @@ class Empresa extends Conexion implements crud {
      */
     public function getById($id_empresa) {
         try {
-            $sql = $this->conexion->prepare("SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas WHERE id_empresa = :id_empresa");
+            $sql = $this->conexion->prepare("
+                SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url 
+                FROM empresas 
+                WHERE id_empresa = :id_empresa
+            ");
             $sql->bindParam(':id_empresa', $id_empresa, PDO::PARAM_INT);
             $sql->execute();
 
@@ -86,11 +90,21 @@ class Empresa extends Conexion implements crud {
     }
 
     /**
-     * Crea una nueva empresa
+     * Crea una nueva empresa (solo admins globales deberían poder)
      */
     public function create($data) {
         try {
-            $sql = $this->conexion->prepare("INSERT INTO empresas (nombre_empresa, logo_url) VALUES (:nombre_empresa, :logo_url)");
+            $id_rol = $this->auth->permises['id_rol'] ?? null;
+            if (!in_array($id_rol, [1, 2])) {
+                $this->status = false;
+                $this->message = 'No tienes permisos para crear empresas.';
+                return;
+            }
+
+            $sql = $this->conexion->prepare("
+                INSERT INTO empresas (nombre_empresa, logo_url) 
+                VALUES (:nombre_empresa, :logo_url)
+            ");
             $sql->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
             $sql->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
             $sql->execute();
@@ -107,11 +121,24 @@ class Empresa extends Conexion implements crud {
     }
 
     /**
-     * Actualiza una empresa existente
+     * Actualiza una empresa existente (solo puede modificar su empresa si es rol limitado)
      */
     public function update($data) {
         try {
-            $sql = $this->conexion->prepare("UPDATE empresas SET nombre_empresa = :nombre_empresa, logo_url = :logo_url WHERE id_empresa = :id_empresa");
+            $id_rol = $this->auth->permises['id_rol'] ?? null;
+            $id_empresa_user = $this->auth->permises['id_empresa'] ?? null;
+
+            if (in_array($id_rol, [3, 4]) && $data['id_empresa'] != $id_empresa_user) {
+                $this->status = false;
+                $this->message = 'No puedes modificar otra empresa que no sea la tuya.';
+                return;
+            }
+
+            $sql = $this->conexion->prepare("
+                UPDATE empresas 
+                SET nombre_empresa = :nombre_empresa, logo_url = :logo_url 
+                WHERE id_empresa = :id_empresa
+            ");
             $sql->bindParam(':id_empresa', $data['id_empresa'], PDO::PARAM_INT);
             $sql->bindParam(':nombre_empresa', $data['nombre_empresa'], PDO::PARAM_STR);
             $sql->bindParam(':logo_url', $data['logo_url'], PDO::PARAM_STR);
@@ -129,11 +156,21 @@ class Empresa extends Conexion implements crud {
     }
 
     /**
-     * Elimina una empresa por ID
+     * Elimina una empresa por ID (solo admins globales deberían poder hacerlo)
      */
     public function delete($id) {
         try {
-            $sql = $this->conexion->prepare("DELETE FROM empresas WHERE id_empresa = :id_empresa");
+            $id_rol = $this->auth->permises['id_rol'] ?? null;
+
+            if (in_array($id_rol, [3, 4])) {
+                $this->status = false;
+                $this->message = 'No puedes eliminar empresas con tu rol.';
+                return;
+            }
+
+            $sql = $this->conexion->prepare("
+                DELETE FROM empresas WHERE id_empresa = :id_empresa
+            ");
             $sql->bindParam(':id_empresa', $id, PDO::PARAM_INT);
             $sql->execute();
 

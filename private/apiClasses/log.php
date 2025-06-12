@@ -16,9 +16,11 @@ class Log extends Conexion {
     public $status = false;
     public $message = NULL;
     public $data = NULL;
+    private $auth;
 
-    function __construct (){
+    function __construct ($auth){
         parent::__construct();
+        $this->auth = $auth;
     }
 
     public function get() {

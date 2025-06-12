@@ -21,7 +21,7 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$rol = new Rol();
+$rol = new Rol($authorization);
 $id = $_GET["id"] ?? null;
 $request = json_decode(file_get_contents("php://input"), true);
 

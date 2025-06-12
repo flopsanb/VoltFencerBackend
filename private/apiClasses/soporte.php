@@ -3,8 +3,8 @@
  * Clase para gestión de tickets de soporte
  * Envía tickets por email mediante PHPMailer.
  * 
- * @author 
- * @version 1.1
+ * @author Francisco
+ * @version 1.2
  */
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -17,8 +17,13 @@ class Soporte {
     public $message = null;
     public $data = null;
 
-    public function crearTicket($request) {
+    private $auth;
 
+    public function __construct($auth) {
+        $this->auth = $auth;
+    }
+
+    public function crearTicket($request) {
         try {
             $titulo = $request['asunto'] ?? null;
             $mensaje = $request['mensaje'] ?? null;
@@ -29,26 +34,24 @@ class Soporte {
                 return;
             }
 
-            $usuario = $GLOBALS['authorization']->usuario;
-
+            $usuario = $this->auth->usuario;
 
             $mail = new PHPMailer(true);
             $mail->SMTPDebug = 2;
             $mail->Debugoutput = 'error_log';
             $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com';
+            $mail->Host = $_ENV['MAIL_HOST'];
             $mail->SMTPAuth = true;
-            $mail->Username = 'voltfencer@gmail.com';
-            $mail->Password = 'hlgclqidhdmdddmo';
+            $mail->Username = $_ENV['MAIL_USERNAME'];
+            $mail->Password = $_ENV['MAIL_PASSWORD'];
             $mail->SMTPSecure = 'tls';
-            $mail->Port = 587;
+            $mail->Port = $_ENV['MAIL_PORT'];
 
             $mail->CharSet = 'UTF-8';
             $mail->Encoding = 'base64';
 
-            $mail->setFrom($email, $usuario['nombre_publico'] ?? 'Usuario VoltFencer');
-            $mail->addAddress('voltfencer@gmail.com', 'Soporte Admin');
-
+            $mail->setFrom($_ENV['MAIL_FROM'], $_ENV['MAIL_FROM_NAME']);
+            $mail->addAddress($_ENV['MAIL_TO'], $_ENV['MAIL_TO_NAME']);
 
             $mail->isHTML(true);
             $mail->Subject = "🎫 Nuevo Ticket de Soporte: $titulo";

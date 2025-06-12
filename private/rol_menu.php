@@ -20,7 +20,7 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$rol_menu = new RolMenu();
+$rol_menu = new RolMenu($authorization);
 $request = json_decode(file_get_contents("php://input"), true);
 $id = $_GET['id'] ?? null;
 

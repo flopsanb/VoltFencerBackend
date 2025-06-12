@@ -19,16 +19,16 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$request = json_decode(file_get_contents("php://input"), true);
-$empresa = new Empresa();
-$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-
 if (!$authorization->token_valido) {
     http_response_code(401);
     $api_utils->response(false, NO_TOKEN_MESSAGE);
     echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
+
+$request = json_decode(file_get_contents("php://input"), true);
+$empresa = new Empresa($authorization);
+$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -40,7 +40,7 @@ try {
                 if ($id) {
                     $empresa->getById($id);
                 } else {
-                    $empresa->get($authorization->permises);
+                    $empresa->get();
                 }
                 http_response_code(200);
             } else {

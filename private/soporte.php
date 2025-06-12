@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] !== ApiUtils::POST) {
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$soporte = new Soporte();
+$soporte = new Soporte($authorization);
 
 // Validar token
 if (!$authorization->token_valido) {

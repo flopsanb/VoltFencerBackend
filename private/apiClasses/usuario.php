@@ -4,7 +4,7 @@
  * Permite operaciones CRUD y modificación de perfil según permisos.
  * 
  * @author Francisco Lopez
- * @version 1.2
+ * @version 1.3
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -16,20 +16,21 @@ class Usuario extends Conexion implements crud {
     public $status = false;
     public $message = NULL;
     public $data = NULL;
+    private $authorization;
 
     const ROUTE = 'usuarios';
     const ROUTE_PROFILE = 'profile';
 
-    function __construct (){
+    function __construct($authorization) {
         parent::__construct();
+        $this->authorization = $authorization;
     }
 
     public function get() {
         try {
-            $authorization = $GLOBALS['authorization'];
-            $datos = $authorization->permises;
-            $id_rol = $datos['id_rol'] ?? null;
-            $id_empresa_token = $datos['id_empresa'] ?? null;
+            $permises = $this->authorization->permises;
+            $id_rol = $permises['id_rol'] ?? null;
+            $id_empresa_token = $permises['id_empresa'] ?? null;
 
             $id_empresa_get = $_GET['id_empresa'] ?? null;
             $usar_empresa = $id_empresa_token;
@@ -54,23 +55,21 @@ class Usuario extends Conexion implements crud {
                 $sql->bindParam(":id_empresa", $usar_empresa);
             }
 
-            if ($sql->execute()){
+            if ($sql->execute()) {
                 $this->status = true;
                 $this->data = $sql->fetchAll(PDO::FETCH_ASSOC);
             }
 
-        } catch(PDOException $error){
+        } catch(PDOException $error) {
             $this->message = $error->getMessage();
         }
         $this->closeConnection();
     }
 
-
     public function create($data) {
-        $authorization = $GLOBALS['authorization'];
-        $datos = $authorization->permises;
-        $id_rol_token = $datos['id_rol'] ?? null;
-        $id_empresa_token = $datos['id_empresa'] ?? null;
+        $permises = $this->authorization->permises;
+        $id_rol_token = $permises['id_rol'] ?? null;
+        $id_empresa_token = $permises['id_empresa'] ?? null;
 
         $usuario = $data['usuario'] ?? null;
         $password = isset($data['password']) ? md5($data['password']) : null;
@@ -123,10 +122,9 @@ class Usuario extends Conexion implements crud {
     }
 
     public function update($data) {
-        $authorization = $GLOBALS['authorization'];
-        $datos = $authorization->permises;
-        $id_rol_token = $datos['id_rol'] ?? null;
-        $id_empresa_token = $datos['id_empresa'] ?? null;
+        $permises = $this->authorization->permises;
+        $id_rol_token = $permises['id_rol'] ?? null;
+        $id_empresa_token = $permises['id_empresa'] ?? null;
 
         $id_usuario = $data['id_usuario'];
         $usuario = $data['usuario'];
@@ -146,12 +144,12 @@ class Usuario extends Conexion implements crud {
         }
 
         $contraSQL = "";
-        if (!empty($data['password'])){
+        if (!empty($data['password'])) {
             $password = md5($data['password']);
             $contraSQL = ", pass_user = :password ";
         }
 
-        try{
+        try {
             $sql = $this->conexion->prepare("UPDATE usuarios SET
                                         id_rol = :id_rol,
                                         id_empresa = :id_empresa,
@@ -172,32 +170,35 @@ class Usuario extends Conexion implements crud {
             $sql->bindParam(":observaciones", $observaciones);
             $sql->bindParam(":id_usuario", $id_usuario);
 
-            if (!empty($data['password'])){
+            if (!empty($data['password'])) {
                 $sql->bindParam(":password", $password);
             }
 
-            if ($sql->execute()){
+            if ($sql->execute()) {
                 $this->status = true;
                 $this->message = EDIT_USER_OK;
                 $this->getUserById($id_usuario);
-            } else $this->message = EDIT_USER_KO;
+            } else {
+                $this->message = EDIT_USER_KO;
+            }
         } catch(PDOException $error) {
             $this->message = $error->getMessage();
         }
         $this->closeConnection();
     }
 
-    public function updateProfile($data, $token) {
+    public function updateProfile($data) {
         $usuario = $data['correoUsuario'];
         $nombre_publico = $data['nombrePublico'];
+        $token = $this->authorization->token;
 
         $contraSQL = "";
-        if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']){
+        if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']) {
             $password = md5($data['nuevaPassword']);
             $contraSQL = ", pass_user = :password ";
         }
 
-        try{
+        try {
             $sql = $this->conexion->prepare("UPDATE usuarios SET
                                         usuario = :usuario,
                                         nombre_publico = :nombre_publico
@@ -208,14 +209,16 @@ class Usuario extends Conexion implements crud {
             $sql->bindParam(":nombre_publico", $nombre_publico);
             $sql->bindParam(":token", $token);
 
-            if (!empty($password)){
+            if (!empty($password)) {
                 $sql->bindParam(":password", $password);
             }
 
-            if ($sql->execute()){
+            if ($sql->execute()) {
                 $this->status = true;
                 $this->message = EDIT_PERFIL_OK;
-            } else $this->message = EDIT_PERFIL_KO;
+            } else {
+                $this->message = EDIT_PERFIL_KO;
+            }
 
         } catch(PDOException $error) {
             $this->message = $error->getMessage();
@@ -224,10 +227,9 @@ class Usuario extends Conexion implements crud {
     }
 
     public function delete($id) {
-        $authorization = $GLOBALS['authorization'];
-        $datos = $authorization->permises;
-        $id_rol_token = $datos['id_rol'] ?? null;
-        $id_empresa_token = $datos['id_empresa'] ?? null;
+        $permises = $this->authorization->permises;
+        $id_rol_token = $permises['id_rol'] ?? null;
+        $id_empresa_token = $permises['id_empresa'] ?? null;
 
         try {
             if ($id_rol_token == 3) {
@@ -245,11 +247,13 @@ class Usuario extends Conexion implements crud {
 
             $sql = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
             $sql->bindParam(":id", $id);
-            if ($sql->execute()){
+            if ($sql->execute()) {
                 $this->status = true;
                 $this->message = DELETE_USER_OK;
                 $this->data = $id;
-            } else $this->message = DELETE_USER_KO;
+            } else {
+                $this->message = DELETE_USER_KO;
+            }
         } catch(PDOException $error) {
             $this->message = $error->getMessage();
         }
@@ -266,7 +270,7 @@ class Usuario extends Conexion implements crud {
                                              LEFT JOIN empresas e ON u.id_empresa = e.id_empresa
                                              WHERE u.id_usuario = :id_usuario");
             $sql->bindParam(":id_usuario", $id_usuario);
-            if ($sql->execute()){
+            if ($sql->execute()) {
                 $this->data = $sql->fetch(PDO::FETCH_ASSOC);
             }
         } catch(PDOException $error) {
@@ -274,5 +278,4 @@ class Usuario extends Conexion implements crud {
         }
     }
 }
-
 ?>

@@ -16,15 +16,18 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$request = json_decode(file_get_contents("php://input"), true);
-$empresa = new Empresa();
-$id_empresa_usuario = $authorization->permises['id_empresa'] ?? null;
-
 if (!$authorization->token_valido || !$id_empresa_usuario) {
     http_response_code(401);
     $empresa->status = false;
     $empresa->message = NO_TOKEN_MESSAGE;
+    exit;
+    
 } else {
+    
+    $request = json_decode(file_get_contents("php://input"), true);
+    $empresa = new Empresa($authorization);
+    $id_empresa_usuario = $authorization->permises['id_empresa'] ?? null;
+
     try {
         switch ($_SERVER['REQUEST_METHOD']) {
             case ApiUtils::GET:

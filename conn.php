@@ -17,13 +17,13 @@ declare(strict_types=1);
  */
 
 // Cargar .env si existe
-$env_path = __DIR__ . '/.env';
-if (file_exists($env_path)) {
-    $env = parse_ini_file($env_path);
-    foreach ($env as $key => $value) {
-        putenv("$key=$value");
-    }
-}
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Dotenv\Dotenv;
+
+// Cargar el .env si existe
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->safeLoad();
 
 if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', '3600');

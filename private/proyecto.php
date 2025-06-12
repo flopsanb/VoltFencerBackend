@@ -19,7 +19,7 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
-$proyecto = new Proyecto();
+$proyecto = new Proyecto($authorization);
 $request = json_decode(file_get_contents("php://input"), true);
 $id = $_GET['id'] ?? null;
 
