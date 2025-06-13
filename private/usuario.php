@@ -50,21 +50,6 @@ try {
         case ApiUtils::POST:
             $authorization->havePermision(ApiUtils::POST, Usuario::ROUTE);
             if ($authorization->have_permision) {
-                // Validaciones antes de crear
-                if ($usuario->existsUsuario($request['usuario'])) {
-                    http_response_code(409);
-                    $api_utils->response(false, 'El nombre de usuario ya está registrado.');
-                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-                    exit;
-                }
-
-                if (!empty($request['email']) && $usuario->existsEmail($request['email'])) {
-                    http_response_code(409);
-                    $api_utils->response(false, 'El correo electrónico ya está registrado.');
-                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-                    exit;
-                }
-
                 $usuario->create($request);
                 http_response_code($usuario->status ? 200 : 400);
             } else {
@@ -82,23 +67,6 @@ try {
                 break;
             }
             if ($authorization->have_permision) {
-                // Validaciones antes de editar
-                $id_usuario = $request['id_usuario'] ?? null;
-
-                if ($usuario->existsUsuario($request['usuario'], $id_usuario)) {
-                    http_response_code(409);
-                    $api_utils->response(false, 'El nombre de usuario ya está registrado.');
-                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-                    exit;
-                }
-
-                if (!empty($request['email']) && $usuario->existsEmail($request['email'], $id_usuario)) {
-                    http_response_code(409);
-                    $api_utils->response(false, 'El correo electrónico ya está registrado.');
-                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
-                    exit;
-                }
-
                 $usuario->update($request);
                 http_response_code($usuario->status ? 200 : 400);
             } else {
