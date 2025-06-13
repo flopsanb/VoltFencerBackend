@@ -29,7 +29,6 @@ if (!$authorization->token_valido) {
 $usuario = new Usuario($authorization);
 $request = json_decode(file_get_contents("php://input"), true);
 $id      = $_GET['id'] ?? null;
-$route   = $_GET['route'] ?? null;
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -50,6 +49,21 @@ try {
         case ApiUtils::POST:
             $authorization->havePermision(ApiUtils::POST, Usuario::ROUTE);
             if ($authorization->have_permision) {
+                // Validaciones antes de crear
+                if ($usuario->existsUsuario($request['usuario'])) {
+                    http_response_code(409);
+                    $api_utils->response(false, 'El nombre de usuario ya está registrado.');
+                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+                    exit;
+                }
+
+                if (!empty($request['email']) && $usuario->existsEmail($request['email'])) {
+                    http_response_code(409);
+                    $api_utils->response(false, 'El correo electrónico ya está registrado.');
+                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+                    exit;
+                }
+
                 $usuario->create($request);
                 http_response_code($usuario->status ? 200 : 400);
             } else {
@@ -61,12 +75,24 @@ try {
 
         case ApiUtils::PUT:
             $authorization->havePermision(ApiUtils::PUT, Usuario::ROUTE);
-            if ($route === Usuario::ROUTE_PROFILE) {
-                $usuario->updateProfile($request, $authorization->token);
-                http_response_code(200);
-                break;
-            }
             if ($authorization->have_permision) {
+                // Validaciones antes de editar
+                $id_usuario = $request['id_usuario'] ?? null;
+
+                if ($usuario->existsUsuario($request['usuario'], $id_usuario)) {
+                    http_response_code(409);
+                    $api_utils->response(false, 'El nombre de usuario ya está registrado.');
+                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+                    exit;
+                }
+
+                if (!empty($request['email']) && $usuario->existsEmail($request['email'], $id_usuario)) {
+                    http_response_code(409);
+                    $api_utils->response(false, 'El correo electrónico ya está registrado.');
+                    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+                    exit;
+                }
+
                 $usuario->update($request);
                 http_response_code($usuario->status ? 200 : 400);
             } else {

@@ -1,10 +1,10 @@
 <?php
 /**
  * Clase para gestión de usuarios
- * Permite operaciones CRUD y modificación de perfil según permisos.
+ * Permite operaciones CRUD según permisos.
  * 
  * @author Francisco Lopez
- * @version 1.3
+ * @version 1.4
  */
 
 require_once __DIR__ . '/interfaces/crud.php';
@@ -19,7 +19,6 @@ class Usuario extends Conexion implements crud {
     private $authorization;
 
     const ROUTE = 'usuarios';
-    const ROUTE_PROFILE = 'profile';
 
     function __construct($authorization) {
         parent::__construct();
@@ -181,45 +180,6 @@ class Usuario extends Conexion implements crud {
             } else {
                 $this->message = EDIT_USER_KO;
             }
-        } catch(PDOException $error) {
-            $this->message = $error->getMessage();
-        }
-        $this->closeConnection();
-    }
-
-    public function updateProfile($data) {
-        $usuario = $data['correoUsuario'];
-        $nombre_publico = $data['nombrePublico'];
-        $token = $this->authorization->token;
-
-        $contraSQL = "";
-        if (!empty($data['nuevaPassword']) && $data['nuevaPassword'] === $data['confirmarNuevaPassword']) {
-            $password = md5($data['nuevaPassword']);
-            $contraSQL = ", pass_user = :password ";
-        }
-
-        try {
-            $sql = $this->conexion->prepare("UPDATE usuarios SET
-                                        usuario = :usuario,
-                                        nombre_publico = :nombre_publico
-                                        $contraSQL
-                                        WHERE token_sesion = :token");
-
-            $sql->bindParam(":usuario", $usuario);
-            $sql->bindParam(":nombre_publico", $nombre_publico);
-            $sql->bindParam(":token", $token);
-
-            if (!empty($password)) {
-                $sql->bindParam(":password", $password);
-            }
-
-            if ($sql->execute()) {
-                $this->status = true;
-                $this->message = EDIT_PERFIL_OK;
-            } else {
-                $this->message = EDIT_PERFIL_KO;
-            }
-
         } catch(PDOException $error) {
             $this->message = $error->getMessage();
         }
