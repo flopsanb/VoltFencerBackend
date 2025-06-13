@@ -277,5 +277,33 @@ class Usuario extends Conexion implements crud {
             $this->message = $error->getMessage();
         }
     }
+
+    public function existsUsuario(string $usuario, ?int $exclude_id = null): bool {
+        $sql = "SELECT COUNT(*) FROM usuarios WHERE usuario = ?";
+        $params = [$usuario];
+
+        if ($exclude_id !== null) {
+            $sql .= " AND id_usuario != ?";
+            $params[] = $exclude_id;
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    public function existsEmail(string $email, ?int $exclude_id = null): bool {
+        $sql = "SELECT COUNT(*) FROM usuarios WHERE email = ?";
+        $params = [$email];
+
+        if ($exclude_id !== null) {
+            $sql .= " AND id_usuario != ?";
+            $params[] = $exclude_id;
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
 }
 ?>
