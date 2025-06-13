@@ -39,7 +39,7 @@ try {
             $authorization->havePermision(ApiUtils::GET, RolMenu::ROUTE);
             if ($authorization->have_permision) {
                 $rol_menu->get();
-                http_response_code(200);
+                http_response_code($rol_menu->status ? 200 : 400);
             } else {
                 http_response_code(403);
                 $rol_menu->status = false;

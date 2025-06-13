@@ -40,7 +40,7 @@ try {
             $authorization->havePermision(ApiUtils::GET, Rol::ROUTE);
             if ($authorization->have_permision) {
                 $rol->get();
-                http_response_code(200);
+                http_response_code($rol->status ? 200 : 400);
             } else {
                 http_response_code(403);
                 $rol->status = false;

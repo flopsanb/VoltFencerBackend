@@ -30,12 +30,19 @@ if (!$authorization->token_valido) {
     http_response_code(401);
     $permiso->status = false;
     $permiso->message = NO_TOKEN_MESSAGE;
+
 } else {
     try {
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case ApiUtils::GET:
-                $authorization->havePermision(ApiUtils::GET, PermisosRol::ROUTE);
-                if ($authorization->have_permision) {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $authorization->havePermision($method, PermisosRol::ROUTE);
+
+        if (!$authorization->have_permision) {
+            http_response_code(403);
+            $permiso->status = false;
+            $permiso->message = 'No tienes permiso para esta operación.';
+        } else {
+            switch ($method) {
+                case ApiUtils::GET:
                     if ($id && ctype_digit($id)) {
                         $permiso->getById((int)$id);
                         http_response_code($permiso->status ? 200 : 400);
@@ -44,56 +51,29 @@ if (!$authorization->token_valido) {
                         $permiso->status = false;
                         $permiso->message = 'ID no proporcionado o inválido.';
                     }
-                } else {
-                    http_response_code(403);
-                    $permiso->status = false;
-                    $permiso->message = 'No tienes permiso para ver estos permisos.';
-                }
-                break;
+                    break;
 
-            case ApiUtils::POST:
-                $authorization->havePermision(ApiUtils::POST, PermisosRol::ROUTE);
-                if ($authorization->have_permision) {
+                case ApiUtils::POST:
                     $permiso->create($request);
                     http_response_code($permiso->status ? 200 : 400);
-                } else {
-                    http_response_code(403);
-                    $permiso->status = false;
-                    $permiso->message = 'No tienes permiso para crear permisos';
-                }
-                break;
+                    break;
 
-            case ApiUtils::PUT:
-                $authorization->havePermision(ApiUtils::PUT, PermisosRol::ROUTE);
-                if ($authorization->have_permision) {
+                case ApiUtils::PUT:
                     $permiso->update($request);
                     http_response_code($permiso->status ? 200 : 400);
-                } else {
-                    http_response_code(403);
-                    $permiso->status = false;
-                    $permiso->message = 'No tienes permiso para actualizar permisos';
-                }
-                break;
+                    break;
 
-            case ApiUtils::DELETE:
-                $authorization->havePermision(ApiUtils::DELETE, PermisosRol::ROUTE);
-                if ($authorization->have_permision) {
+                case ApiUtils::DELETE:
                     $permiso->delete($id);
                     http_response_code($permiso->status ? 200 : 400);
-                } else {
-                    http_response_code(403);
+                    break;
+
+                default:
+                    http_response_code(405);
                     $permiso->status = false;
-                    $permiso->message = 'No tienes permiso para eliminar permisos';
-                }
-                break;
-
-            default:
-                http_response_code(405);
-                $permiso->status = false;
-                $permiso->message = 'Método no soportado';
-                break;
+                    $permiso->message = 'Método no soportado';
+            }
         }
-
     } catch (Exception $e) {
         http_response_code(500);
         $permiso->status = false;

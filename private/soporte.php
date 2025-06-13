@@ -45,15 +45,17 @@ $request = json_decode(file_get_contents("php://input"), true);
 
 try {
     if (!$request || !is_array($request)) {
-        throw new Exception('Solicitud malformada o vacía');
+        $soporte->status = false;
+        $soporte->message = '❌ Datos inválidos. No se pudo procesar el ticket.';
+        http_response_code(400);
+    } else {
+        $soporte->crearTicket($request);
+        http_response_code($soporte->status ? 200 : 400);
     }
-
-    $soporte->crearTicket($request);
-    http_response_code($soporte->status ? 200 : 400);
 } catch (Exception $e) {
     http_response_code(500);
     $soporte->status = false;
-    $soporte->message = 'Error inesperado en el endpoint de soporte';
+    $soporte->message = '💥 Error inesperado al crear el ticket';
     $soporte->data = $e->getMessage();
 }
 

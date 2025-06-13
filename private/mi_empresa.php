@@ -19,14 +19,13 @@ $authorization->comprobarToken();
 $empresa = new Empresa($authorization);
 $id_empresa_usuario = $authorization->permises['id_empresa'] ?? null;
 
-// Si no hay token válido o no hay empresa asociada, devolvemos respuesta inmediata
+// Verificación de token y empresa válida
 if (!$authorization->token_valido || !$id_empresa_usuario) {
     http_response_code(401);
     echo json_encode($api_utils->response(false, NO_TOKEN_MESSAGE), JSON_PRETTY_PRINT);
     exit;
 }
 
-// Procesamos la solicitud
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     $request = json_decode(file_get_contents("php://input"), true) ?? [];
@@ -40,7 +39,7 @@ try {
             } else {
                 http_response_code(403);
                 $empresa->status = false;
-                $empresa->message = 'No tienes permiso para ver tu empresa';
+                $empresa->message = 'No tienes permiso para ver tu empresa.';
             }
             break;
 
@@ -53,22 +52,23 @@ try {
             } else {
                 http_response_code(403);
                 $empresa->status = false;
-                $empresa->message = 'No tienes permiso para modificar tu empresa';
+                $empresa->message = 'No tienes permiso para modificar tu empresa.';
             }
             break;
 
         default:
             http_response_code(405);
             $empresa->status = false;
-            $empresa->message = 'Método no soportado';
+            $empresa->message = 'Método no soportado.';
     }
 
 } catch (Exception $e) {
     http_response_code(500);
     $empresa->status = false;
-    $empresa->message = 'Error inesperado';
+    $empresa->message = 'Error inesperado.';
     $empresa->data = $e->getMessage();
 }
 
+// Siempre responder con el mismo formato
 $api_utils->response($empresa->status, $empresa->message, $empresa->data, $authorization->permises);
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);

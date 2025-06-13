@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Se accede a todos los registros si se tiene permiso global.
  * 
  * @author Francisco López
- * @version 2.0
+ * @version 2.1
  */
 
 require_once __DIR__ . '/apiClasses/empresa.php';
@@ -19,14 +19,15 @@ $api_utils->setHeaders(ApiUtils::ALL_HEADERS);
 $authorization = new Authorization();
 $authorization->comprobarToken();
 
+// Validación de token
 if (!$authorization->token_valido) {
     http_response_code(401);
     echo json_encode($api_utils->response(false, NO_TOKEN_MESSAGE), JSON_PRETTY_PRINT);
     exit;
 }
 
-$request = json_decode(file_get_contents("php://input"), true);
 $empresa = new Empresa($authorization);
+$request = json_decode(file_get_contents("php://input"), true);
 $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 try {
@@ -41,7 +42,7 @@ try {
                 } else {
                     $empresa->get();
                 }
-                http_response_code(200);
+                http_response_code($empresa->status ? 200 : 400);
             } else {
                 http_response_code(403);
                 $empresa->status = false;
@@ -89,7 +90,6 @@ try {
             http_response_code(405);
             $empresa->status = false;
             $empresa->message = 'Método HTTP no soportado.';
-            break;
     }
 
 } catch (Throwable $e) {
