@@ -70,7 +70,5 @@ try {
     $empresa->data = $e->getMessage();
 }
 
-echo json_encode(
-    $api_utils->response($empresa->status, $empresa->message, $empresa->data, $authorization->permises),
-    JSON_PRETTY_PRINT
-);
+$api_utils->response($empresa->status, $empresa->message, $empresa->data, $authorization->permises);
+echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
