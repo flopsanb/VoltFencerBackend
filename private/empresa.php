@@ -21,8 +21,7 @@ $authorization->comprobarToken();
 
 if (!$authorization->token_valido) {
     http_response_code(401);
-    $api_utils->response(false, NO_TOKEN_MESSAGE);
-    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
+    echo json_encode($api_utils->response(false, NO_TOKEN_MESSAGE), JSON_PRETTY_PRINT);
     exit;
 }
 
