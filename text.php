@@ -70,12 +70,4 @@ define('ADD_ACCESO_KO', 'Error al asignar el acceso');
 
 define('DELETE_ACCESO_OK', 'Acceso eliminado con éxito');
 define('DELETE_ACCESO_KO', 'Error al eliminar el acceso');
-
-/**
- * Mensajes relacionados con el registro de logs del sistema
- * Incluye respuestas sobre la operación de registro de actividad.
- */
-define('LOG_INSERT_OK', 'Log registrado correctamente');
-define('LOG_INSERT_KO', 'Fallo al registrar el log');
-
 ?>

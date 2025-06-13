@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Procesa las credenciales y devuelve token si son válidas
  * 
  * @author Francisco
- * @version 2.1
+ * @version 2.0
  */
 
 require_once __DIR__ . '/apiClasses/auth.php';
@@ -15,35 +15,37 @@ require_once __DIR__ . '/../api_utils.php';
 $api_utils = new ApiUtils();
 $api_utils->setHeaders(ApiUtils::POST);
 
-// Validar método POST
+// Solo permitir método POST
 if ($_SERVER['REQUEST_METHOD'] !== ApiUtils::POST) {
     http_response_code(405);
-    echo json_encode($api_utils->response(false, 'Método no permitido. Solo POST'), JSON_PRETTY_PRINT);
+    $api_utils->response(false, 'Método no permitido. Solo POST');
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
 
-// Leer y parsear JSON
+// Leer entrada y validar JSON
 $request_raw = file_get_contents("php://input");
 $request = json_decode($request_raw, true);
 
-// Validar JSON
 if (json_last_error() !== JSON_ERROR_NONE || !is_array($request)) {
     http_response_code(400);
-    echo json_encode($api_utils->response(false, 'Formato JSON inválido o mal formado'), JSON_PRETTY_PRINT);
+    $api_utils->response(false, 'Formato JSON inválido o mal formado');
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
 
 // Validar credenciales mínimas
 function credencialesInvalidas(array $req): bool {
     return (
-        empty($req['username']) || !is_string($req['username']) ||
-        empty($req['password']) || !is_string($req['password'])
+        !isset($req['username']) || !is_string($req['username']) || trim($req['username']) === '' ||
+        !isset($req['password']) || !is_string($req['password']) || trim($req['password']) === ''
     );
 }
 
 if (credencialesInvalidas($request)) {
     http_response_code(400);
-    echo json_encode($api_utils->response(false, 'Credenciales incompletas o inválidas'), JSON_PRETTY_PRINT);
+    $api_utils->response(false, 'Credenciales incompletas o inválidas');
+    echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -51,11 +53,17 @@ $username = trim($request['username']);
 $password = trim($request['password']);
 
 try {
+    // Ejecutar login
     $auth = new Auth();
     $auth->doLogin($username, $password);
 
-    http_response_code($auth->status ? 200 : 401);
-    $api_utils->response($auth->status, $auth->message, $auth->data);
+    if ($auth->status) {
+        http_response_code(200);
+    } else {
+        http_response_code(401);
+    }
+
+    $api_utils->response($auth->status, $auth->message, $auth->data, null);
 
 } catch (Throwable $e) {
     http_response_code(500);

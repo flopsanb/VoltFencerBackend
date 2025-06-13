@@ -6,7 +6,7 @@
  * Pensado para el formulario de registro o recuperación de contraseña.
  * 
  * @author  Francisco Lopez Sanchez
- * @version 2.2
+ * @version 2.1
  */
 
 require_once __DIR__ . '/apiClasses/auth.php';
@@ -18,7 +18,7 @@ $api_utils->setHeaders(ApiUtils::POST);
 $auth = new Auth();
 
 try {
-    // Leer y validar JSON
+    // Leer y validar el JSON
     $raw_input = file_get_contents("php://input");
     $request = json_decode($raw_input, true);
 
@@ -32,17 +32,14 @@ try {
         throw new Exception("El nombre de usuario es obligatorio y debe tener al menos 3 caracteres");
     }
 
-    // Ejecutar validación
     $auth->comprobarUsuario($usuario);
+
     http_response_code(200);
     $api_utils->response($auth->status, $auth->message, $auth->data ?? null);
 
 } catch (Exception $e) {
     http_response_code(400);
     $api_utils->response(false, $e->getMessage());
-} catch (Throwable $e) {
-    http_response_code(500);
-    $api_utils->response(false, 'Error interno al comprobar el usuario', $e->getMessage());
 }
 
 echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
