@@ -261,27 +261,5 @@ class Usuario extends Conexion implements crud {
         }
     }
 
-    public function existsEmail(string $email, ?int $exclude_id = null): bool {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM usuarios WHERE email = :email";
-            if ($exclude_id !== null) {
-                $sql .= " AND id_usuario != :exclude_id";
-            }
-
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->bindParam(':email', $email);
-            if ($exclude_id !== null) {
-                $stmt->bindParam(':exclude_id', $exclude_id, PDO::PARAM_INT);
-            }
-
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['total'] > 0;
-
-        } catch (PDOException $e) {
-            $this->message = $e->getMessage();
-            return false;
-        }
-    }
 }
 ?>
