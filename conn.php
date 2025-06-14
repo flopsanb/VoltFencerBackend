@@ -185,7 +185,8 @@ class Authorization extends Conexion {
             'roles-menu'   => 'permisos_globales',
             'permisos-rol' => 'permisos_globales',
             'proyectos'    => 'proyectos',
-            'logs'         => 'logs_empresa'
+            'logs'         => 'logs_empresa',
+            'roles_empresa' => 'roles_mi_empresa',
         ];
 
         $accion = $acciones[$method] ?? null;
