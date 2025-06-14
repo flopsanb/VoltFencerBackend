@@ -20,8 +20,6 @@ $authorization = new Authorization();
 $authorization->comprobarToken();
 
 $rolesEmpresa = new RolesEmpresa($authorization);
-$request = json_decode(file_get_contents("php://input"), true);
-$id = $_GET['id'] ?? null;
 
 if (!$authorization->token_valido) {
     http_response_code(401);
@@ -57,7 +55,7 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     $rolesEmpresa->status = false;
-    $rolesEmpresa->message = 'Error inesperado en el endpoint de roles_empresa';
+    $rolesEmpresa->message = 'Error inesperado en el endpoint de roles_empresa.';
     $rolesEmpresa->data = $e->getMessage();
 }
 
