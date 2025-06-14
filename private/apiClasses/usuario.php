@@ -87,6 +87,8 @@ class Usuario extends Conexion implements crud {
             }
         }
 
+        error_log("🧠 Entrando en create() con datos: " . json_encode($data));
+
         try {
             if (
                 !empty($usuario) &&
@@ -119,11 +121,21 @@ class Usuario extends Conexion implements crud {
                     $this->message = ADD_USER_KO;
                 }
             } else {
+                error_log("🚨 FALTAN CAMPOS: " . json_encode([
+                    'usuario' => $usuario,
+                    'password' => $password,
+                    'email' => $email,
+                    'nombre_publico' => $nombre_publico,
+                    'id_rol' => $id_rol,
+                    'id_empresa' => $id_empresa,
+                    'habilitado' => $habilitado
+                    ]));
                 $this->status = false;
                 $this->message = 'Faltan campos obligatorios';
                 return;
             }
         } catch (PDOException $error) {
+            error_log("💥 PDOException: " . $error->getMessage());
             $this->status = false;
             $this->message = 'PDOException: ' . $error->getMessage();
         }
