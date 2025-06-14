@@ -79,65 +79,67 @@ class Usuario extends Conexion implements crud {
         $habilitado      = isset($data['habilitado']) ? (int)$data['habilitado'] : 1;
         $observaciones   = $data['observaciones'] ?? '';
 
+        // Restricción para admin_empresa
         if ($id_rol_token === 3) {
             if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
                 $this->status = false;
-                $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
+                $this->message = '❌ No puedes crear usuarios fuera de tu empresa o con rol superior.';
                 return;
             }
         }
 
-        error_log("🧠 Entrando en create() con datos: " . json_encode($data));
-
         try {
+            // Validación de campos obligatorios
             if (
-                !empty($usuario) &&
-                !empty($password) &&
-                !empty($email) &&
-                !empty($nombre_publico) &&
-                isset($id_rol) &&
-                isset($id_empresa) &&
-                isset($habilitado)
+                empty($usuario) ||
+                empty($password) ||
+                empty($email) ||
+                empty($nombre_publico) ||
+                !isset($id_rol) ||
+                !isset($id_empresa)
             ) {
-                $sql = $this->conexion->prepare("INSERT INTO usuarios 
-                    (usuario, pass_user, email, id_rol, id_empresa, nombre_publico, habilitado, observaciones) 
-                    VALUES (:usuario, :password, :email, :id_rol, :id_empresa, :nombre_publico, :habilitado, :observaciones)");
-
-                $sql->bindParam(":usuario", $usuario);
-                $sql->bindParam(":password", $password);
-                $sql->bindParam(":email", $email);
-                $sql->bindParam(":id_rol", $id_rol);
-                $sql->bindParam(":id_empresa", $id_empresa);
-                $sql->bindParam(":nombre_publico", $nombre_publico);
-                $sql->bindParam(":habilitado", $habilitado, PDO::PARAM_INT);
-                $sql->bindParam(":observaciones", $observaciones);
-
-                if ($sql->execute()) {
-                    $this->status = true;
-                    $this->message = ADD_USER_OK;
-                    $this->getUserById($this->conexion->lastInsertId());
-                } else {
-                    $this->status = false;
-                    $this->message = ADD_USER_KO;
-                }
-            } else {
-                error_log("🚨 FALTAN CAMPOS: " . json_encode([
-                    'usuario' => $usuario,
-                    'password' => $password,
-                    'email' => $email,
-                    'nombre_publico' => $nombre_publico,
-                    'id_rol' => $id_rol,
-                    'id_empresa' => $id_empresa,
-                    'habilitado' => $habilitado
-                    ]));
                 $this->status = false;
-                $this->message = 'Faltan campos obligatorios';
+                $this->message = '❌ Faltan campos obligatorios.';
                 return;
             }
+
+            // Comprobación de duplicados
+            $check = $this->conexion->prepare("SELECT COUNT(*) FROM usuarios WHERE usuario = :usuario OR email = :email");
+            $check->bindParam(":usuario", $usuario);
+            $check->bindParam(":email", $email);
+            $check->execute();
+
+            if ($check->fetchColumn() > 0) {
+                $this->status = false;
+                $this->message = '❌ Ya existe un usuario o correo electrónico con esos datos.';
+                return;
+            }
+
+            $sql = $this->conexion->prepare("INSERT INTO usuarios 
+                (usuario, pass_user, email, id_rol, id_empresa, nombre_publico, habilitado, observaciones) 
+                VALUES (:usuario, :password, :email, :id_rol, :id_empresa, :nombre_publico, :habilitado, :observaciones)");
+
+            $sql->bindParam(":usuario", $usuario);
+            $sql->bindParam(":password", $password);
+            $sql->bindParam(":email", $email);
+            $sql->bindParam(":id_rol", $id_rol);
+            $sql->bindParam(":id_empresa", $id_empresa);
+            $sql->bindParam(":nombre_publico", $nombre_publico);
+            $sql->bindParam(":habilitado", $habilitado, PDO::PARAM_INT);
+            $sql->bindParam(":observaciones", $observaciones);
+
+            if ($sql->execute()) {
+                $this->status = true;
+                $this->message = ADD_USER_OK;
+                $this->getUserById($this->conexion->lastInsertId());
+            } else {
+                $this->status = false;
+                $this->message = '❌ Error al insertar el usuario.';
+            }
+
         } catch (PDOException $error) {
-            error_log("💥 PDOException: " . $error->getMessage());
             $this->status = false;
-            $this->message = 'PDOException: ' . $error->getMessage();
+            $this->message = '❌ PDOException: ' . $error->getMessage();
         }
 
         $this->closeConnection();
@@ -149,40 +151,58 @@ class Usuario extends Conexion implements crud {
         $id_rol_token = $permises['id_rol'] ?? null;
         $id_empresa_token = $permises['id_empresa'] ?? null;
 
-        $id_usuario = $data['id_usuario'];
-        $usuario = $data['usuario'];
-        $email = $data['email'];
-        $observaciones = $data['observaciones'];
-        $nombre_publico = $data['nombre_publico'];
-        $id_rol = $data['id_rol'];
-        $id_empresa = $data['id_empresa'] ?? null;
-        $habilitado = $data['habilitado'] ? 1 : 0;
+        $id_usuario      = $data['id_usuario'] ?? null;
+        $usuario         = $data['usuario'] ?? null;
+        $email           = $data['email'] ?? null;
+        $observaciones   = $data['observaciones'] ?? '';
+        $nombre_publico  = $data['nombre_publico'] ?? null;
+        $id_rol          = $data['id_rol'] ?? null;
+        $id_empresa      = $data['id_empresa'] ?? null;
+        $habilitado      = isset($data['habilitado']) ? (int)$data['habilitado'] : 1;
+        $password        = isset($data['password']) && trim($data['password']) !== '' ? md5($data['password']) : null;
 
+        // Validación básica
+        if (!$id_usuario || !$usuario || !$email || !$nombre_publico || !isset($id_rol) || !isset($id_empresa)) {
+            $this->status = false;
+            $this->message = '❌ Faltan campos obligatorios.';
+            return;
+        }
+
+        // Restricción de admin_empresa
         if ($id_rol_token == 3) {
             if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
                 $this->status = false;
-                $this->message = 'No puedes editar usuarios fuera de tu empresa o con rol superior';
+                $this->message = '❌ No puedes editar usuarios fuera de tu empresa o con rol superior.';
                 return;
             }
         }
 
-        $contraSQL = "";
-        if (!empty($data['password'])) {
-            $password = md5($data['password']);
-            $contraSQL = ", pass_user = :password ";
-        }
-
         try {
+            // Comprobación de duplicados
+            $check = $this->conexion->prepare("SELECT COUNT(*) FROM usuarios WHERE (usuario = :usuario OR email = :email) AND id_usuario != :id");
+            $check->bindParam(":usuario", $usuario);
+            $check->bindParam(":email", $email);
+            $check->bindParam(":id", $id_usuario);
+            $check->execute();
+
+            if ($check->fetchColumn() > 0) {
+                $this->status = false;
+                $this->message = '❌ Ya existe otro usuario o email igual.';
+                return;
+            }
+
+            $contraSQL = $password !== null ? ", pass_user = :password" : "";
+
             $sql = $this->conexion->prepare("UPDATE usuarios SET
-                                        id_rol = :id_rol,
-                                        id_empresa = :id_empresa,
-                                        usuario = :usuario,
-                                        email = :email,
-                                        nombre_publico = :nombre_publico,
-                                        habilitado = :habilitado,
-                                        observaciones = :observaciones
-                                        $contraSQL
-                                        WHERE id_usuario = :id_usuario");
+                id_rol = :id_rol,
+                id_empresa = :id_empresa,
+                usuario = :usuario,
+                email = :email,
+                nombre_publico = :nombre_publico,
+                habilitado = :habilitado,
+                observaciones = :observaciones
+                $contraSQL
+                WHERE id_usuario = :id_usuario");
 
             $sql->bindParam(":id_rol", $id_rol);
             $sql->bindParam(":id_empresa", $id_empresa);
@@ -193,7 +213,7 @@ class Usuario extends Conexion implements crud {
             $sql->bindParam(":observaciones", $observaciones);
             $sql->bindParam(":id_usuario", $id_usuario);
 
-            if (!empty($data['password'])) {
+            if ($password !== null) {
                 $sql->bindParam(":password", $password);
             }
 
@@ -202,14 +222,17 @@ class Usuario extends Conexion implements crud {
                 $this->message = EDIT_USER_OK;
                 $this->getUserById($id_usuario);
             } else {
+                $this->status = false;
                 $this->message = EDIT_USER_KO;
-                return;
             }
-        } catch(PDOException $error) {
-            $this->message = $error->getMessage();
+        } catch (PDOException $error) {
+            $this->status = false;
+            $this->message = '❌ PDOException: ' . $error->getMessage();
         }
+
         $this->closeConnection();
     }
+
 
     public function delete($id) {
         $permises = $this->authorization->permises;
