@@ -70,15 +70,16 @@ class Usuario extends Conexion implements crud {
         $id_rol_token = $permises['id_rol'] ?? null;
         $id_empresa_token = $permises['id_empresa'] ?? null;
 
-        $usuario = $data['usuario'] ?? null;
-        $password = isset($data['password']) ? md5($data['password']) : null;
-        $email = $data['email'] ?? null;
-        $nombre_publico = $data['nombre_publico'] ?? null;
-        $id_rol = $data['id_rol'] ?? null;
-        $id_empresa = $data['id_empresa'] ?? null;
-        $observaciones = $data['observaciones'] ?? '';
+        $usuario         = $data['usuario'] ?? null;
+        $password        = isset($data['password']) ? md5($data['password']) : null;
+        $email           = $data['email'] ?? null;
+        $nombre_publico  = $data['nombre_publico'] ?? null;
+        $id_rol          = $data['id_rol'] ?? null;
+        $id_empresa      = $data['id_empresa'] ?? null;
+        $habilitado      = isset($data['habilitado']) ? (int)$data['habilitado'] : 1;
+        $observaciones   = $data['observaciones'] ?? '';
 
-        if ($id_rol_token == 3) {
+        if ($id_rol_token === 3) {
             if ($id_empresa != $id_empresa_token || !in_array($id_rol, [3, 4])) {
                 $this->status = false;
                 $this->message = 'No puedes crear usuarios fuera de tu empresa o con rol superior';
@@ -87,10 +88,18 @@ class Usuario extends Conexion implements crud {
         }
 
         try {
-            if (!empty($usuario) && !empty($password) && !empty($email) && isset($id_rol) && isset($id_empresa)) {
+            if (
+                !empty($usuario) &&
+                !empty($password) &&
+                !empty($email) &&
+                !empty($nombre_publico) &&
+                isset($id_rol) &&
+                isset($id_empresa) &&
+                isset($habilitado)
+            ) {
                 $sql = $this->conexion->prepare("INSERT INTO usuarios 
                     (usuario, pass_user, email, id_rol, id_empresa, nombre_publico, habilitado, observaciones) 
-                    VALUES (:usuario, :password, :email, :id_rol, :id_empresa, :nombre_publico, 1, :observaciones)");
+                    VALUES (:usuario, :password, :email, :id_rol, :id_empresa, :nombre_publico, :habilitado, :observaciones)");
 
                 $sql->bindParam(":usuario", $usuario);
                 $sql->bindParam(":password", $password);
@@ -98,6 +107,7 @@ class Usuario extends Conexion implements crud {
                 $sql->bindParam(":id_rol", $id_rol);
                 $sql->bindParam(":id_empresa", $id_empresa);
                 $sql->bindParam(":nombre_publico", $nombre_publico);
+                $sql->bindParam(":habilitado", $habilitado, PDO::PARAM_INT);
                 $sql->bindParam(":observaciones", $observaciones);
 
                 if ($sql->execute()) {
@@ -119,6 +129,7 @@ class Usuario extends Conexion implements crud {
 
         $this->closeConnection();
     }
+
 
     public function update($data) {
         $permises = $this->authorization->permises;
