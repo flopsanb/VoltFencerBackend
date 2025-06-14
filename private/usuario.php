@@ -61,11 +61,6 @@ try {
 
         case ApiUtils::PUT:
             $authorization->havePermision(ApiUtils::PUT, Usuario::ROUTE);
-            if ($route === Usuario::ROUTE_PROFILE) {
-                $usuario->updateProfile($request, $authorization->token);
-                http_response_code(200);
-                break;
-            }
             if ($authorization->have_permision) {
                 $usuario->update($request);
                 http_response_code($usuario->status ? 200 : 400);
