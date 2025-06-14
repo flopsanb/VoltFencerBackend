@@ -9,10 +9,9 @@ declare(strict_types=1);
  * @version 1.0
  */
 
-require_once 'interfaces/crud.php';
 require_once __DIR__ . '/../../conn.php';
 
-class RolesEmpresa extends Conexion implements crud {
+class RolesEmpresa extends Conexion {
 
     public $status = false;
     public $message = null;
