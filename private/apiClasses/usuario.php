@@ -121,6 +121,7 @@ class Usuario extends Conexion implements crud {
             } else {
                 $this->status = false;
                 $this->message = 'Faltan campos obligatorios';
+                return;
             }
         } catch (PDOException $error) {
             $this->status = false;
@@ -190,6 +191,7 @@ class Usuario extends Conexion implements crud {
                 $this->getUserById($id_usuario);
             } else {
                 $this->message = EDIT_USER_KO;
+                return;
             }
         } catch(PDOException $error) {
             $this->message = $error->getMessage();
@@ -248,29 +250,5 @@ class Usuario extends Conexion implements crud {
             $this->message = $error->getMessage();
         }
     }
-
-    public function existsUsuario(string $usuario, ?int $exclude_id = null): bool {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM usuarios WHERE usuario = :usuario";
-            if ($exclude_id !== null) {
-                $sql .= " AND id_usuario != :exclude_id";
-            }
-
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->bindParam(':usuario', $usuario);
-            if ($exclude_id !== null) {
-                $stmt->bindParam(':exclude_id', $exclude_id, PDO::PARAM_INT);
-            }
-
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['total'] > 0;
-
-        } catch (PDOException $e) {
-            $this->message = $e->getMessage();
-            return false;
-        }
-    }
-
 }
 ?>
