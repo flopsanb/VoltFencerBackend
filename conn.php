@@ -245,6 +245,7 @@ class Authorization extends Conexion {
             'empresas'     => 'empresas',
             'usuarios'     => 'usuarios',
             'roles-menu'   => 'permisos_globales',
+            'roles'        => 'permisos_globales',
             'permisos-rol' => 'permisos_globales',
             'proyectos'    => 'proyectos',
             'logs'         => 'logs_empresa',
