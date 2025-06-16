@@ -47,7 +47,7 @@ $usuario_token = $authorization->usuario['usuario'] ?? null;
 $usuario_post = $request['user'] ?? null;
 
 if (empty($usuario_post) || $usuario_post !== $usuario_token) {
-    http_response_code(403);
+    http_response_code(403);    // Sin permisos
     $api_utils->response(false, 'Usuario no coincide con el token');
     echo json_encode($api_utils->response, JSON_PRETTY_PRINT);
     exit;
@@ -75,7 +75,7 @@ try {
     $api_utils->response(true, 'Logout completado correctamente');
 
 } catch (Throwable $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $api_utils->response(false, 'Error interno al cerrar sesión');
 }
 

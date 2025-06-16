@@ -37,7 +37,7 @@ try {
                 $empresa->getById((int)$id_empresa_usuario);
                 http_response_code($empresa->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $empresa->status = false;
                 $empresa->message = 'No tienes permiso para ver tu empresa.';
             }
@@ -50,7 +50,7 @@ try {
                 $empresa->update($request);
                 http_response_code($empresa->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $empresa->status = false;
                 $empresa->message = 'No tienes permiso para modificar tu empresa.';
             }
@@ -63,7 +63,7 @@ try {
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $empresa->status = false;
     $empresa->message = 'Error inesperado.';
     $empresa->data = $e->getMessage();

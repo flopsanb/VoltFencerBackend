@@ -23,6 +23,13 @@ class Soporte {
         $this->auth = $auth;
     }
 
+    /**
+     * Crea un ticket de soporte enviando un email con los detalles del ticket.
+     * 
+     * @param array $request Datos del ticket: 'asunto', 'mensaje', 'email'.
+     * 
+     * @return void
+     */
     public function crearTicket($request) {
         try {
             $titulo  = $request['asunto']  ?? null;

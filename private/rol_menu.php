@@ -90,7 +90,7 @@ try {
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $rol_menu->status = false;
     $rol_menu->message = 'Error inesperado en el endpoint de rol_menu';
     $rol_menu->data = $e->getMessage();

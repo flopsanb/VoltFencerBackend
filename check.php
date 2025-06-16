@@ -5,7 +5,7 @@ echo "<pre>";
 echo "🔍 Backend File Check - VoltFencer\n";
 echo "Current DIR: " . __DIR__ . "\n\n";
 
-// Lista de rutas relativas que quieres comprobar
+// Lista de rutas relativas a comprobar
 $paths = [
     'index.php',
     'router.php',
@@ -26,7 +26,6 @@ $paths = [
     'private/permisos_rol.php',
     'private/rol.php',
     'private/rol_menu.php',
-    'private/log.php',
     'private/estado_conexion.php',
     'private/check_token.php',
     'private/check_token_passwd.php',
@@ -35,7 +34,6 @@ $paths = [
     'private/apiClasses/empresa.php',
     'private/apiClasses/usuario.php',
     'private/apiClasses/auth.php',
-    'private/apiClasses/log.php',
     'private/apiClasses/proyecto.php',
     'private/apiClasses/soporte.php',
     'private/apiClasses/estado_conexion.php',
@@ -45,6 +43,7 @@ $paths = [
     'private/apiClasses/interfaces/crud.php',
 ];
 
+// Busca si existe cada archivo del paths
 foreach ($paths as $relativePath) {
     $fullPath = __DIR__ . '/' . $relativePath;
     $exists = file_exists($fullPath);

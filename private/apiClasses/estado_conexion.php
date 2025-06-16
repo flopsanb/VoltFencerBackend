@@ -1,9 +1,9 @@
 <?php
 /**
- * Clase para gestión de estados de conexión de usuarios
+ * Esta clase gestiona el estado de conexión de los usuarios en la aplicación.
+ * Su función principal es registrar en tiempo real cuándo un usuario ha tenido actividad
+ * y permitir consultar qué usuarios se encuentran conectados recientemente.
  * 
- * Permite registrar actividad en tiempo real y consultar
- * qué usuarios están actualmente activos.
  * 
  * @author  Francisco Lopez Sanchez
  * @version 1.2
@@ -23,6 +23,17 @@ class EstadoConexion extends Conexion
         parent::__construct();
     }
 
+    /**
+     * registrarActividad(): Actualiza o inserta el último acceso del usuario
+     * 
+     * Este método utiliza el comando SQL `REPLACE INTO` para registrar el instante
+     * exacto en el que un usuario ha interactuado con la aplicación.
+     * 
+     * - Si el usuario ya existe en la tabla `estado_conexion`, se actualiza su campo `last_seen`.
+     * - Si no existe, se crea un nuevo registro.
+     * 
+     * @param int $id_usuario  Identificador único del usuario activo
+     */
     public function registrarActividad($id_usuario)
     {
         try {
@@ -39,6 +50,14 @@ class EstadoConexion extends Conexion
         $this->closeConnection();
     }
 
+    /**
+     * getConectados(): Devuelve los usuarios activos en los últimos minutos
+     * 
+     * Consulta todos los usuarios cuya última actividad (`last_seen`) haya sido dentro
+     * de los últimos 3 minutos. Esta ventana temporal se puede ajustar según necesidad.
+     * 
+     * El método devuelve únicamente los `id_usuario`, como un array de enteros.
+     */
     public function getConectados()
     {
         try {

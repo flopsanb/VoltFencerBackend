@@ -53,7 +53,7 @@ try {
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $rolesEmpresa->status = false;
     $rolesEmpresa->message = 'Error inesperado en el endpoint de roles_empresa.';
     $rolesEmpresa->data = $e->getMessage();

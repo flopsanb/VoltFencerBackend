@@ -1,8 +1,14 @@
 <?php
 /**
- * Clase para gestión de empresas
+ * Clase Empresa: Gestión de entidades empresariales
+ *
+ * Esta clase implementa el conjunto de operaciones CRUD sobre el modelo de empresa,
+ * aplicando restricciones según el rol del usuario autenticado. Utiliza inyección
+ * de dependencias para verificar los permisos mediante una instancia de autorización.
  * 
- * CRUD con control de permisos en base al usuario autenticado.
+ * Está pensada para entornos multiempresa, donde se permite a usuarios globales
+ * gestionar todas las empresas, y a usuarios limitados (por empresa) acceder solo
+ * a su propia entidad.
  * 
  * @author Francisco
  * @version 1.5
@@ -19,6 +25,7 @@ class Empresa extends Conexion implements crud {
 
     private $auth; // Instancia de Authorization
 
+    // Ruta identificadora de esta entidad
     const ROUTE = 'empresas';
 
     public function __construct($auth) {
@@ -36,6 +43,7 @@ class Empresa extends Conexion implements crud {
 
             $query = "SELECT id_empresa, nombre_empresa, empleados_totales, proyectos_totales, logo_url FROM empresas";
 
+            // Aplicar filtro para roles limitados
             if (in_array($id_rol, [3, 4])) {
                 $query .= " WHERE id_empresa = :id_empresa";
             }

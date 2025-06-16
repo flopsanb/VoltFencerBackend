@@ -28,6 +28,12 @@ class RolMenu extends Conexion implements crud {
         $this->auth = $auth;
    }
 
+    /**
+     * Obtiene todas las relaciones de rol y menú
+     * 
+     * Realiza una consulta a la vista `sgi_vista_rol_menu` para obtener
+     * todas las asignaciones de roles a opciones de menú.
+     */
    public function get() {
 
         $sql = $this->conexion->prepare("SELECT * FROM sgi_vista_rol_menu");
@@ -40,6 +46,14 @@ class RolMenu extends Conexion implements crud {
         $this->closeConnection();
    }
 
+    /**
+     * Obtiene una relación de rol y menú por ID
+     * 
+     * Realiza una consulta a la vista `sgi_vista_rol_menu` para obtener
+     * la asignación de un rol específico a una opción de menú.
+     * 
+     * @param int $id_rol_menu ID de la relación rol-menú
+     */
    public function create($data) {
 
     $id_rol = $data['id_rol'];
@@ -74,6 +88,7 @@ class RolMenu extends Conexion implements crud {
     
     } 
    }
+
 
    public function update($data) {
 
@@ -119,6 +134,7 @@ class RolMenu extends Conexion implements crud {
         } 
    }
 
+   
    public function delete($id) {
 
         if (isset($id)){
@@ -138,6 +154,7 @@ class RolMenu extends Conexion implements crud {
             $this->closeConnection();
         } 
    }
+
 
    private function getRolMenuById($id_rol_menu) {
     $sql = $this->conexion->prepare("SELECT * FROM sgi_vista_rol_menu where id_rol_menu = :id_rol_menu");

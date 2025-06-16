@@ -41,7 +41,7 @@ try {
                 $proyecto->get();
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $proyecto->status = false;
                 $proyecto->message = 'No tienes permiso para ver proyectos.';
             }
@@ -53,7 +53,7 @@ try {
                 $proyecto->create($request);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $proyecto->status = false;
                 $proyecto->message = 'No tienes permiso para crear proyectos.';
             }
@@ -65,7 +65,7 @@ try {
                 $proyecto->update($request);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $proyecto->status = false;
                 $proyecto->message = 'No tienes permiso para modificar proyectos.';
             }
@@ -77,7 +77,7 @@ try {
                 $proyecto->delete($id);
                 http_response_code($proyecto->status ? 200 : 400);
             } else {
-                http_response_code(403);
+                http_response_code(403);    // Sin permisos
                 $proyecto->status = false;
                 $proyecto->message = 'No tienes permiso para eliminar proyectos.';
             }
@@ -91,7 +91,7 @@ try {
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $proyecto->status = false;
     $proyecto->message = 'Error inesperado en el endpoint de proyecto';
     $proyecto->data = $e->getMessage();

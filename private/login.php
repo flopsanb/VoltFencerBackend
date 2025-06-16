@@ -66,7 +66,7 @@ try {
     $api_utils->response($auth->status, $auth->message, $auth->data, null);
 
 } catch (Throwable $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $api_utils->response(false, 'Error interno en el login');
 }
 

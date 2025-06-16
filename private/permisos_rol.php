@@ -75,7 +75,7 @@ if (!$authorization->token_valido) {
             }
         }
     } catch (Exception $e) {
-        http_response_code(500);
+        http_response_code(500);    // Error interno del servidor
         $permiso->status = false;
         $permiso->message = 'Error inesperado en el endpoint de permisos_rol';
         $permiso->data = $e->getMessage();

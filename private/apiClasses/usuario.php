@@ -18,6 +18,7 @@ class Usuario extends Conexion implements crud {
     public $data = NULL;
     private $authorization;
 
+
     const ROUTE = 'usuarios';
 
     function __construct($authorization) {
@@ -25,6 +26,14 @@ class Usuario extends Conexion implements crud {
         $this->authorization = $authorization;
     }
 
+    /**
+     * Obtiene todos los usuarios según el rol del usuario autenticado.
+     * 
+     * - Rol 1 (Administrador): Acceso a todos los usuarios de todas las empresas.
+     * - Rol 2 (Gestor): Acceso a todos los usuarios de todas las empresas.
+     * - Rol 3 (Usuario limitado): Acceso solo a usuarios de su propia empresa.
+     * - Rol 4 (Usuario externo): Acceso a usuarios visibles de su propia empresa.
+     */
     public function get() {
         try {
             $permises = $this->authorization->permises;
@@ -65,6 +74,11 @@ class Usuario extends Conexion implements crud {
         $this->closeConnection();
     }
 
+    /**
+     * Obtiene un usuario por su ID.
+     * 
+     * @param int $id_usuario ID del usuario a recuperar.
+     */
     public function create($data) {
         $permises = $this->authorization->permises;
         $id_rol_token = $permises['id_rol'] ?? null;
@@ -145,7 +159,11 @@ class Usuario extends Conexion implements crud {
         $this->closeConnection();
     }
 
-
+    /**
+     * Crea un nuevo usuario.
+     * 
+     * @param array $data Datos del usuario a crear.
+     */
     public function update($data) {
         $permises = $this->authorization->permises;
         $id_rol_token = $permises['id_rol'] ?? null;
@@ -233,7 +251,11 @@ class Usuario extends Conexion implements crud {
         $this->closeConnection();
     }
 
-
+    /**
+     * Elimina un usuario por su ID.
+     * 
+     * @param int $id ID del usuario a eliminar.
+     */
     public function delete($id) {
         $permises = $this->authorization->permises;
         $id_rol_token = $permises['id_rol'] ?? null;
@@ -268,6 +290,11 @@ class Usuario extends Conexion implements crud {
         $this->closeConnection();
     }
 
+    /**
+     * Obtiene un usuario por su ID.
+     * 
+     * @param int $id_usuario ID del usuario a recuperar.
+     */
     private function getUserById($id_usuario) {
         try {
             $sql = $this->conexion->prepare("SELECT u.id_usuario, u.usuario, u.email, u.id_rol, r.nombre_rol AS rol, 

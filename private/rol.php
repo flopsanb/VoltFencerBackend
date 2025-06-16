@@ -91,7 +91,7 @@ try {
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
+    http_response_code(500);    // Error interno del servidor
     $rol->status = false;
     $rol->message = 'Error inesperado en el endpoint de rol';
     $rol->data = $e->getMessage();

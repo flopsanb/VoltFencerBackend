@@ -1,7 +1,7 @@
 <?php
 // index.php - Router principal para el backend VoltFencer
 
-// Mostrar errores (se desactiva en producción)
+// Mostrar errores
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
